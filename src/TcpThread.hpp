@@ -8,7 +8,20 @@
 #include <QDataStream>
 #include <QDebug>
 
-namespace server {
+struct worker_connection {
+  QString host_name;
+  QTcpSocket * pSocket;
+
+  client_connection * pClient = NULL;
+};
+
+struct client_connection {
+  QString host_name;
+  QTcpSocket * pSocket;
+
+  worker_connection * pWorker = NULL;
+};
+
 struct TcpMessage {
 	QString line;
 	QTcpSocket * pSocket;
@@ -96,6 +109,4 @@ private:
 
 	QQueue<TcpMessage> * m_pTcpMessages;
 };
-
-}//namespace
 #endif
