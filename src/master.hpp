@@ -1,15 +1,50 @@
 #ifndef __MASTER_HPP__
 #define __MASTER_HPP__
-/**
- * This class holds the definition of a master_node.
- */
+/* Qt Includes */
+#include <QThread>
+#include <QtCore>
 
+/* File Includes */
+#include "tcpthread.hpp"
+#include "slave.hpp"
+
+/**
+ * TimeFuse Master class.
+ *
+ * This is the thread on which the
+ * master node decides how to/if it
+ * can conect a user to a worker node.
+ *
+ * @author Hunter Allen <allen286@purdue.edu>
+ */
 class master_node : public QObject
 {
   Q_OBJECT
 public:
-  master_node(QObject * pParent = NULL);
+  explicit master_node(QObject * pParent = NULL);
+  virtual ~master_node();
+
+  bool init();
+
+  /* Thread's Run Function */
+  Q_SLOT void run();
+
+  /* Callback functions for tcp connections */
+  Q_SLOT void handle_client_connect(client_connection * _client);
+  Q_SLOT void handle_worker_connect(worker_connection * _worker);
+
+  Q_SLOT void stop() { m_continue = false; }
 private:
+  volatile bool m_continue = true;
+
+  TcpThread * m_pTcpThread;
+  QThread * m_pThread;
+
+  QQueue<worker_connection *> m_worker_connections;
+  QQueue<client_connection *> m_client_connections;
+
+  QSemaphore * m_pClientSema;
+  QSemaphore * m_pWorkerSema;
 };
 #endif
 
