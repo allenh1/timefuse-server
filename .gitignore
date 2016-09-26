@@ -1,0 +1,4 @@
+*~	        # because emacs
+*.pro.user* # because QtCreator
+bin/*		# because we don't care
+Makefile    # because Qt
