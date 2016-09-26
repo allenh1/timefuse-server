@@ -1,5 +1,23 @@
+CREATE TABLE IF NOT EXISTS schedules(
+	schedule_id INTEGER NOT NULL AUTO_INCREMENT,
+	PRIMARY KEY(schedule_id)
+);
+
+CREATE TABLE IF NOT EXISTS schedule_item(
+	date DATE NOT NULL,
+	start_time TIME NOT NULL,
+	is_repeated BOOLEAN NOT NULL,
+	duration INTEGER NOT NULL,
+	location VARCHAR(512)  NOT NULL,
+	event_name VARCHAR(512) NOT NULL,
+	schedule_item_id INTEGER NOT NULL AUTO_INCREMENT,
+	schedule_id INTEGER NOT NULL,
+	PRIMARY KEY(schedule_item_id),
+	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
+);
+
+
 CREATE TABLE IF NOT EXISTS repeat_freq(
-        repeat BOOLEAN,
 	mon BOOLEAN,
 	tues BOOLEAN,
 	wed  BOOLEAN,
@@ -12,28 +30,7 @@ CREATE TABLE IF NOT EXISTS repeat_freq(
 	year_per_rep INTEGER,
 	schedule_item_id INTEGER NOT NULL,
 	FOREIGN KEY(schedule_item_id) REFERENCES schedule_item(schedule_item_id)
-) ENGINE=INOODB;
-
-
-CREATE TABLE IF NOT EXISTS schedule_item(
-	date DATE NOT NULL,
-	start_time TIME NOT NULL,
-	is_repeated BOOLEAN NOT NULL,
-	duration INTEGER NOT NULL,
-	location VARCHAR(512)  NOT NULL,
-	event_name VARCHAR(512) NOT NULL,
-	schedule_item_id INTEGER NOT NULL AUTO_INCREMENT
-	schedule_id INTEGER NOT NULL,
-	PRIMARY KEY(schedule_item_id),
-	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
-) ENGINE=INOODB;
-
-
-CREATE TABLE IF NOT EXISTS schedules(
-	schedule_id INTEGER NOT NULL AUTO_INCREMENT,
-	PRIMARY KEY(schedule_id)
-) ENGINE=INOODB;
-
+);
 
 CREATE TABLE IF NOT EXISTS users(
 	user_id INTEGER NOT NULL AUTO_INCREMENT,
@@ -44,7 +41,7 @@ CREATE TABLE IF NOT EXISTS users(
 	cellphone BIGINT,
 	PRIMARY KEY(user_id),
 	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
-) ENGINE=INOODB;
+);
 
 
 CREATE TABLE IF NOT EXISTS groups(
@@ -53,11 +50,11 @@ CREATE TABLE IF NOT EXISTS groups(
        group_name VARCHAR(100) NOT NULL,
        PRIMARY KEY (group_id),
        FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id)
-) ENGINE=INOODB;
+);
 
 CREATE TABLE IF NOT EXISTS user_group_relation(
        user_id INTEGER NOT NULL,
        group_id INTEGER NOT NULL,
        FOREIGN KEY(user_id) REFERENCES users(user_id),
        FOREIGN KEY(group_id) REFERENCES groups(group_id)
-) ENGINE=INOODB;
+);
