@@ -1,11 +1,8 @@
 #ifndef __CLIENT_CONNECTION_HPP__
 #define __CLIENT_CONNECTION_HPP__
-#include <QtNetwork>
-#include <QtCore>
+#include "tcp_conneciton.hpp"
 
-#include "worker_connection.hpp"
-
-class client_connection : public QObject
+class client_connection : public tcp_connection
 {
    Q_OBJECT
 public:
@@ -13,9 +10,8 @@ public:
 							  QTcpSocket * _pSocket,
 							  QObject * pParent = NULL
 	  );
+   virtual ~client_connection();
 
-private:
-   QString m_hostname;
-   QTcpSocket * m_pSocket;
+   void add_worker(const worker_connection *& w);
 };
 #endif

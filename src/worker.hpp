@@ -4,10 +4,13 @@
  * This class has all attributes relating to a
  * slave node. This is the big task.
  */
-class slave_node : public QObject
+class workernode : public QObject
 {
   Q_OBJECT
+   /**
+	* @todo Add required funcitons
+	*/
 public:
-  slave_node(QObject * pParent = NULL);
+  worker_node(QObject * pParent = NULL);
 };
 #endif

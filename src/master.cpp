@@ -78,6 +78,61 @@ void master_node::handle_worker_connect(worker_connection * _worker)
    m_p_worker_mutex->unlock();
 }
 
+/** 
+ * @brief run function for this thread
+ *
+ * This is the main run loop for the master
+ * thread. The master loops through resources,
+ * while necessary and pairs a client to
+ * a worker when both are available.
+ */
+void master_node::run()
+{
+   const quint16 sleep_time = 100;
+   
+   for (; m_continue; m_p_thread->m_sleep(sleep_time)) {
+	  /* lock client mutex */
+	  m_p_client_mutex->lock();
+	  
+	  /* check that our queue is non-empty */
+	  if (!p_client_queue.size()) {
+		 /* unlock mutex and continue */
+		 p_client_mutex->unlock();
+		 continue;
+	  }
 
+	  /* now try to acquire a client */
+	  m_p_client_sema->acquire();
+	  /* dequeue the client */
+	  client_connection * c = m_client_connecitons.dequeue();
+	  /* unlock client mutex */
+	  m_p_client_mutex->unlock();
 
+	  /* lock worker mutex */
+	  m_p_worker_mutex->lock();
 
+	  /* check that the worker queue is non-empty */
+	  if (!p_worker_queue.size()) {
+		 /* add the client back and continue */
+		 handle_client_connect(c);
+		 /* unlock worker mutex */
+		 m_p_worker_mutex->unlock();
+		 continue;
+	  }
+
+	  /* try to acquire a worker */
+	  m_p_worker_sema->acquire();
+	  worker_connection * w = m_worker_connections.dequeue();
+	  /* unlock the worker mutex */
+	  m_p_worker_mutex->unlock();
+
+	  /* send client to worker */
+	  w->add_client(c);
+
+	  /* send worker to client */
+	  c->add_worker(w);
+
+	  /* disconnect worker and client */
+	  w->disconnect(); c->disconnect();
+   }
+}

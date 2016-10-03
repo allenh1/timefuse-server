@@ -1,26 +1,15 @@
-#ifndef TCP_THREAD
-#define TCP_THREAD
+#ifndef __TCP_THREAD_HPP__
+#define __TCP_THREAD_HPP__
 
 #include <iostream>
 
-#include <QtCore>
-#include <QtNetwork>
 #include <QDataStream>
+#include <QtNetwork>
+#include <QtCore>
 #include <QDebug>
 
-struct worker_connection {
-   QString host_name;
-   QTcpSocket * pSocket;
-
-   client_connection * pClient = NULL;
-};
-
-struct client_connection {
-   QString host_name;
-   QTcpSocket * pSocket;
-
-   worker_connection * pWorker = NULL;
-};
+#include "worker_connection.hpp"
+#include "client_connection.hpp"
 
 struct TcpMessage {
    QString line;
@@ -33,12 +22,12 @@ struct TcpMessage {
    }
 };
 
-class TcpThread : public QObject
+class tcp_thread : public QObject
 {
    Q_OBJECT
 public:
-   explicit TcpThread(const QString & _hostname, const quint16 & _port, QObject * parent = NULL);
-   ~TcpThread() { /** @todo This function is important, I suppose... **/ }
+   explicit tcp_thread(const QString & _hostname, const quint16 & _port, QObject * parent = NULL);
+   ~tcp_thread() { /** @todo This function is important, I suppose... **/ }
 
    bool init();
    bool writeData(QByteArray data, QString match);

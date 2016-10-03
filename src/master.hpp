@@ -5,7 +5,7 @@
 #include <QtCore>
 
 /* File Includes */
-#include "tcpthread.hpp"
+#include "tcp_thread.hpp"
 #include "slave.hpp"
 
 /**
