@@ -13,7 +13,7 @@ public:
 							  QTcpSocket * _pSocket,
 							  QObject * pParent = NULL
 	  );
-
+   
 private:
    QString m_hostname;
    QTcpSocket * m_pSocket;
