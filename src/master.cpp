@@ -13,7 +13,7 @@ master_node::master_node(const QString & _hostname, const quint16 & _port, QObje
    : m_hostname(_hostname),
 	 m_port(_port),
 	 QObject(pParent)
-{ /* @todo Create the master */ }
+{ /* master is created in init */ }
 
 /** 
  * @brief Initialize the master node.
@@ -30,10 +30,25 @@ master_node::master_node(const QString & _hostname, const quint16 & _port, QObje
  */
 bool master_node::init()
 {
-   /**
-	* @todo construct & move onto thread, as well as
-	* set up tcp thread and connect handlers.
-	*/
+   /* construct our thread */
+   m_p_thread = new QThread();
+   /* construct the tcp_thread */
+   m_p_tcp_thread = new tcp_thread(m_hostname, m_port);
+
+   /* establish connection handlers */
+   connect(m_p_tcp_thread, &tcp_thread::client_connected,
+		   this, &master_node::handle_client_connect);
+   connect(m_p_tcp_thread, &tcp_thread::worker_connected,
+		   this, &master_node::handle_worker_connect);
+
+   /* move onto the constructed thread */
+   this->move_to_thread(m_p_thread);
+   /* set the run loop to be ours */
+   connect(m_p_thread, &QThread::started,
+		   this, &master_node::run);
+   /* finally, start the thread. */
+   m_p_thread.start();
+   return true;
 }
 
 /** 

@@ -41,6 +41,9 @@ public:
 private:
    volatile bool m_continue = true;
 
+   QString m_hostname;
+   quint16 m_port;
+
    tcp_thread * m_p_tcp_thread;
    QThread * m_p_thread;
 

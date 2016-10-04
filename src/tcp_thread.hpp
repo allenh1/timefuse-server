@@ -41,6 +41,9 @@ public:
    Q_SIGNAL void readIt(QTcpSocket*);
    Q_SIGNAL void receivedMessage();
 
+   Q_SIGNAL void worker_connected(worker_connection * _worker);
+   Q_SIGNAL void client_connected(client_connection * _client);
+   
    Q_SLOT void echoReceived(QString);
 
    int queueDepth() {
