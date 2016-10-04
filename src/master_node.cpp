@@ -1,4 +1,4 @@
-#include "master.hpp"
+#include "master_node.hpp"
 
 /** 
  * Construct the master node for the timefuse-server.
@@ -10,10 +10,25 @@
  * @param _p_parent Parent QObject
  */
 master_node::master_node(const QString & _hostname, const quint16 & _port, QObject * _p_parent)
-   : m_hostname(_hostname),
-	 m_port(_port),
-	 QObject(pParent)
-{ /* master is created in init */ }
+   : QObject(_p_parent),
+	 m_hostname(_hostname),
+	 m_port(_port)
+{
+   /* create mutexes */
+   m_p_client_mutex = new QMutex();
+   m_p_worker_mutex = new QMutex();
+
+   /* create semaphores */
+   m_p_client_sema = new QSemaphore();
+   m_p_worker_sema = new QSemaphore();
+}
+
+master_node::~master_node()
+{
+   /**
+	* @todo free resources and halt threads
+	*/
+}
 
 /** 
  * @brief Initialize the master node.
@@ -30,25 +45,28 @@ master_node::master_node(const QString & _hostname, const quint16 & _port, QObje
  */
 bool master_node::init()
 {
+   std::cout<<"Initializing master thread..."<<std::endl;
    /* construct our thread */
    m_p_thread = new QThread();
    /* construct the tcp_thread */
    m_p_tcp_thread = new tcp_thread(m_hostname, m_port);
 
    /* establish connection handlers */
+   std::cout<<"Establishing connection handlers..."<<std::endl;
    connect(m_p_tcp_thread, &tcp_thread::client_connected,
 		   this, &master_node::handle_client_connect);
    connect(m_p_tcp_thread, &tcp_thread::worker_connected,
 		   this, &master_node::handle_worker_connect);
 
+   std::cout<<"Moving onto constructed thread..."<<std::endl;
    /* move onto the constructed thread */
-   this->move_to_thread(m_p_thread);
+   this->moveToThread(m_p_thread);
    /* set the run loop to be ours */
    connect(m_p_thread, &QThread::started,
 		   this, &master_node::run);
    /* finally, start the thread. */
-   m_p_thread.start();
-   return true;
+   m_p_thread->start();
+   return m_p_thread->isRunning();
 }
 
 /** 
@@ -104,22 +122,24 @@ void master_node::handle_worker_connect(worker_connection * _worker)
 void master_node::run()
 {
    const quint16 sleep_time = 100;
+
+   std::cout<<"Master Thread started"<<std::endl;
    
-   for (; m_continue; m_p_thread->m_sleep(sleep_time)) {
+   for (; m_continue; m_p_thread->msleep(sleep_time)) {
 	  /* lock client mutex */
 	  m_p_client_mutex->lock();
 	  
 	  /* check that our queue is non-empty */
-	  if (!p_client_queue.size()) {
+	  if (!m_client_connections.size()) {
 		 /* unlock mutex and continue */
-		 p_client_mutex->unlock();
+		 m_p_client_mutex->unlock();
 		 continue;
 	  }
 
 	  /* now try to acquire a client */
 	  m_p_client_sema->acquire();
 	  /* dequeue the client */
-	  client_connection * c = m_client_connecitons.dequeue();
+	  client_connection * c = m_client_connections.dequeue();
 	  /* unlock client mutex */
 	  m_p_client_mutex->unlock();
 
@@ -127,7 +147,7 @@ void master_node::run()
 	  m_p_worker_mutex->lock();
 
 	  /* check that the worker queue is non-empty */
-	  if (!p_worker_queue.size()) {
+	  if (!m_worker_connections.size()) {
 		 /* add the client back and continue */
 		 handle_client_connect(c);
 		 /* unlock worker mutex */

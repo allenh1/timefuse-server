@@ -1,7 +1,7 @@
-#include "TcpThread.h"
-#include "User.h"
+#include "tcp_thread.hpp"
+/* @todo #include "User.h" */
 
-tcp_thread::tcp_thread tcp_thread(
+tcp_thread::tcp_thread(
    const QString & _hostname,                /*  hostname for TCP thread construction  */
    const quint16 & _port,                    /* port on which we construct this server */
    QObject * parent                          /*         parent of this QObject         */
@@ -14,10 +14,10 @@ tcp_thread::tcp_thread tcp_thread(
    m_pTcpMessages = new QQueue<TcpMessage>();
 }
 
-bool tcp_thread tcp_thread::init()
+bool tcp_thread::init()
 {
    /* forward accepted connections to our accept connection */
-   connect(m_p_server, &QTcpServer::newConnection, this, &tcp_threa tcp_threadd::acceptConnection);
+   connect(m_pServer, &QTcpServer::newConnection, this, &tcp_thread::acceptConnection);
 
    /* listen for any host on our port */
    if (m_pServer->listen(QHostAddress::Any, m_port)) {
@@ -28,7 +28,7 @@ bool tcp_thread tcp_thread::init()
    return true;
 }
 
-bool tcp_thread tcp_thread::writeData(QByteArray data, QString match)
+bool tcp_thread::writeData(QByteArray data, QString match)
 {
    QDataStream out(&data, QIODevice::WriteOnly);
    out.setVersion(QDataStream::Qt_5_5);
@@ -60,7 +60,7 @@ bool tcp_thread tcp_thread::writeData(QByteArray data, QString match)
    return true;
 }
 
-void tcp_thread tcp_thread::disconnected()
+void tcp_thread::disconnected()
 {
    QTcpSocket * quitter = qobject_cast<QTcpSocket *>(sender());
 
@@ -81,7 +81,7 @@ void tcp_thread tcp_thread::disconnected()
    delete pMutex;
 }
 
-void tcp_thread tcp_thread::acceptConnection()
+void tcp_thread::acceptConnection()
 {
    QTcpSocket * client = m_pServer->nextPendingConnection();
    client->write("Hello there!\r\n");
@@ -89,12 +89,12 @@ void tcp_thread tcp_thread::acceptConnection()
 
    if (client) {
 	  connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
-	  connect(client, &QAbstractSocket::disconnected, this, &tcp_threa tcp_thread::disconnected);
-	  connect(client, &QIODevice::readyRead, this, &tcp_threa tcp_thread::readFromClient);
+	  connect(client, &QAbstractSocket::disconnected, this, &tcp_thread::disconnected);
+	  connect(client, &QIODevice::readyRead, this, &tcp_thread::readFromClient);
    }
 }
 
-void tcp_thread tcp_thread::echoReceived(QString msg)
+void tcp_thread::echoReceived(QString msg)
 {
    std::cout<<"I read \""<<msg.toStdString()<<"\" from the client!"<<std::endl;
 }

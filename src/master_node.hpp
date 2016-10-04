@@ -1,12 +1,12 @@
-#ifndef __MASTER_HPP__
-#define __MASTER_HPP__
+#ifndef __MASTER_NODE_HPP__
+#define __MASTER_NODE_HPP__
 /* Qt Includes */
 #include <QThread>
 #include <QtCore>
 
 /* File Includes */
 #include "tcp_thread.hpp"
-#include "slave.hpp"
+/* #include "slave.hpp" */
 
 /**
  * TimeFuse Master class.
