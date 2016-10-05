@@ -6,7 +6,7 @@
 #include <iostream>
 
 /* File Includes */
-#include "src/master.hpp"
+#include "src/master_node.hpp"
 /* @todo implement "src/slave.hpp" */
 
 int main (int argc, char ** argv)
