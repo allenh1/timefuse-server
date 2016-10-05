@@ -1,6 +1,9 @@
 #ifndef __WORKER_CONNECTION_HPP__
 #define __WORKER_CONNECTION_HPP__
 #include "tcp_connection.hpp"
+#include "client_connection.hpp"
+
+class client_connection;
 
 class worker_connection : public tcp_connection
 {
@@ -12,6 +15,6 @@ public:
 	  );
    virtual ~worker_connection();
 
-   void add_client(const client_connection *& c);
+   void add_client(const client_connection * c);
 };
 #endif
