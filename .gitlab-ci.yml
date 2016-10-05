@@ -1,0 +1,8 @@
+stages:
+  - build
+
+compile
+  stage: build
+  script:
+    - qmake
+    - make
