@@ -1,7 +1,7 @@
 stages:
   - build
 
-compile
+compile:
   stage: build
   script:
     - qmake
