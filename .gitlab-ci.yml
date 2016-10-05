@@ -4,5 +4,5 @@ stages:
 compile:
   stage: build
   script:
-    - qmake
+    - qmake -qt=qt5
     - make
