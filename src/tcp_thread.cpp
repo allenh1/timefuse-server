@@ -31,7 +31,7 @@ bool tcp_thread::init()
 bool tcp_thread::writeData(QByteArray data, QString match)
 {
    QDataStream out(&data, QIODevice::WriteOnly);
-   out.setVersion(QDataStream::Qt_5_5);
+   out.setVersion(QDataStream::Qt_5_7);
    TcpMessage msg;
    msg.line = match;
 
@@ -45,7 +45,7 @@ bool tcp_thread::writeData(QByteArray data, QString match)
 		 break;
 	  }
    }
-   
+
    if (index == -1) return false;
    QTcpSocket * sender = m_pTcpMessages->at(index).pSocket;
    pMutex->unlock();
@@ -84,8 +84,6 @@ void tcp_thread::disconnected()
 void tcp_thread::acceptConnection()
 {
    QTcpSocket * client = m_pServer->nextPendingConnection();
-   client->write("Hello there!\r\n");
-   client->flush();
 
    if (client) {
 	  connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
@@ -105,18 +103,60 @@ void tcp_thread::readFromClient()
    //! as well as casts it it a QTcpSocket.
    QTcpSocket * pClientSocket = qobject_cast<QTcpSocket *>(sender());
 
+   /**
+	* Initiate communication protocol:
+	*
+	* Protocol:
+	* =========
+	*  1. Client says "HELLO\r\n".
+	*  2. We respond with "HELLO\r\n".
+	*  3. They identify their request,
+	*     as either "REQUEST_CLIENT\r\n"
+	*     or as "REQUEST_WORKER\r\n".
+	*  4. We then enqueue them, and
+	*     we wait for pair.
+	*  5. Lastly, we send details.
+	*  6. Finally, we say "BYE\r\n".
+	*/
+   
    QString text; TcpMessage toEnqueue;
-   for (;pClientSocket->canReadLine();) {
-	  QByteArray bae = pClientSocket->readLine();
-	  QString temp = QString(bae);
-	  text += temp.replace("\r\n", "");
-   }
-   if (text == tr(""))
-	  return;
+   states state = hello;
 
-   toEnqueue.line = text;
-   toEnqueue.pSocket = pClientSocket;
-   m_pTcpMessages->enqueue(toEnqueue);
+   for (;pClientSocket->canReadLine();) {
+		 if (state == states::hello) {
+			QByteArray bae = pClientSocket->readLine();
+			QString temp = QString(bae);
+			text += temp.replace("\r\n", "");
+			if (text == "HELLO") state = states::wait_request;
+			else state = reject;
+			std::cout<<"Read: \""<<text.toStdString()<<"\""<<std::endl;
+		 } else if (state == states::wait_request) {
+			QByteArray bae = pClientSocket->readLine();
+			QString temp = QString(bae);
+			text += temp.replace("\r\n", "");
+			if (text == "REQUEST_CLIENT") {
+			   /**
+				* @todo handle client connection
+				*/
+			   std::cerr<<"client identified"<<std::endl;
+			   state = reject;
+			} else if (text == "REQUEST_WORKER") {
+			   /**
+				* @todo handle worker connection
+				*/
+			   std::cerr<<"worker identified"<<std::endl;
+			   state = reject;
+			} else state = reject;
+			std::cout<<"Read: \""<<text.toStdString()<<"\""<<std::endl;
+		 } else if (state == states::reject) {
+			pClientSocket->write(QString("BYE\r\n").toUtf8());
+			return;
+		 }
+   }
+
+   // toEnqueue.line = text;
+   // toEnqueue.pSocket = pClientSocket;
+   // m_pTcpMessages->enqueue(toEnqueue);
    Q_EMIT receivedMessage();
    /**
 	* @todo save the client somehow, probably through passing and delays.

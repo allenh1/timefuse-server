@@ -50,7 +50,8 @@ bool master_node::init()
    m_p_thread = new QThread();
    /* construct the tcp_thread */
    m_p_tcp_thread = new tcp_thread(m_hostname, m_port);
-
+   m_p_tcp_thread->init();
+   
    /* establish connection handlers */
    std::cout<<"Establishing connection handlers..."<<std::endl;
    connect(m_p_tcp_thread, &tcp_thread::client_connected,

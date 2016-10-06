@@ -32,6 +32,8 @@ public:
    bool init();
    bool writeData(QByteArray data, QString match);
 
+   enum states { hello, wait_request, reject };
+   
    Q_SLOT void disconnected();
    Q_SLOT void readFromClient();
    Q_SLOT void sendMessage(QString, QString);
