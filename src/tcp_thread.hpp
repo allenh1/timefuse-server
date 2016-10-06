@@ -11,17 +11,6 @@
 #include "worker_connection.hpp"
 #include "client_connection.hpp"
 
-struct TcpMessage {
-   QString line;
-   QTcpSocket * pSocket;
-
-   bool read = false;
-
-   bool operator == (TcpMessage m1) {
-	  return line == m1.line;
-   }
-};
-
 class tcp_thread : public QObject
 {
    Q_OBJECT
@@ -30,11 +19,11 @@ public:
    ~tcp_thread() { /** @todo This function is important, I suppose... **/ }
 
    bool init();
-   bool writeData(QByteArray data, QString match);
+   bool writeData(QByteArray data, tcp_connection * receiver);
    
    Q_SLOT void disconnected();
    Q_SLOT void readFromClient();
-   Q_SLOT void sendMessage(QString, QString);
+   Q_SLOT void sendMessage(QString, tcp_connection * request);
    Q_SLOT void acceptConnection();
    Q_SLOT void stop(){ m_continue = false; }
 
