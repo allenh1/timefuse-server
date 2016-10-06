@@ -31,8 +31,6 @@ public:
 
    bool init();
    bool writeData(QByteArray data, QString match);
-
-   enum states { hello, wait_request, reject };
    
    Q_SLOT void disconnected();
    Q_SLOT void readFromClient();
@@ -61,34 +59,12 @@ public:
 
 	  else {
 		 for (int x = 0; x < queueSize; ++x) {
-			if (!m_pTcpMessages->at(x).read)
-			   ++size;
+			++size;
 		 }
 	  }
 	  pMutex->unlock();
 	  delete pMutex;
 	  return size;
-   }
-
-   QString getLastMessage() {
-	  QMutex * pMutex = new QMutex();
-	  pMutex->lock();
-	  QString line;
-	  for (int x = m_pTcpMessages->size() - 1; x >= 0; --x) {
-		 if (!m_pTcpMessages->at(x).read) {
-			line = m_pTcpMessages->at(x).line;
-			/**
-			 * @todo Apparently we actually have to replace this.
-			 */
-			TcpMessage temp = m_pTcpMessages->takeAt(x);
-			temp.read = true;
-			m_pTcpMessages->insert(x, temp);
-			break;
-		 }
-	  }
-	  pMutex->unlock();
-	  delete pMutex;
-	  return line;
    }
 
    const QTcpServer * getServer() { return m_pServer; }
@@ -101,6 +77,6 @@ private:
    quint16 m_port;
    quint16 m_blockSize;
 
-   QQueue<TcpMessage> * m_pTcpMessages;
+   QQueue<tcp_connection> * m_pTcpMessages;
 };
 #endif
