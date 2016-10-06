@@ -11,7 +11,7 @@ tcp_thread::tcp_thread(
    m_hostname = _hostname;
    m_port = _port;
    m_pServer = new QTcpServer(this);
-   m_pTcpMessages = new QQueue<TcpMessage>();
+   m_pTcpMessages = new QQueue<tcp_connection>();
 }
 
 bool tcp_thread::init()
@@ -28,34 +28,17 @@ bool tcp_thread::init()
    return true;
 }
 
-bool tcp_thread::writeData(QByteArray data, QString match)
+bool tcp_thread::writeData(QByteArray data, tcp_connection * receiver)
 {
    QDataStream out(&data, QIODevice::WriteOnly);
-   out.setVersion(QDataStream::Qt_5_5);
-   TcpMessage msg;
-   msg.line = match;
-
-   QMutex * pMutex = new QMutex();
-   int index = -1;
-   pMutex->lock();
-
-   for (int x = 0; x < m_pTcpMessages->size(); ++x) {
-	  if (m_pTcpMessages->at(x).line == msg.line) {
-		 index = x;
-		 break;
-	  }
-   }
+   out.setVersion(QDataStream::Qt_5_6);
    
-   if (index == -1) return false;
-   QTcpSocket * sender = m_pTcpMessages->at(index).pSocket;
-   pMutex->unlock();
+   QTcpSocket * to_receive = (QTcpSocket*) receiver->get_socket();
 
-   delete pMutex;
+   connect(to_receive, &QAbstractSocket::disconnected, to_receive, &QObject::deleteLater);
 
-   connect(sender, &QAbstractSocket::disconnected, sender, &QObject::deleteLater);
-
-   sender->write(data);
-   sender->disconnectFromHost();
+   to_receive->write(data);
+   to_receive->disconnectFromHost();
 	
    return true;
 }
@@ -67,25 +50,11 @@ void tcp_thread::disconnected()
    std::cout<< "Client "<< QHostAddress(quitter->peerAddress().toIPv4Address()).toString().toStdString();
    std::cout<<":" << quitter->peerPort();
    std::cout<< " has left the server." << std::endl;
-
-   //! Dequeue them, because they are quitters and meanie heads.
-   QMutex * pMutex = new QMutex();
-   pMutex->lock();
-   for (int x = 0; x < m_pTcpMessages->size(); ++x) {
-	  if (m_pTcpMessages->at(x).pSocket == quitter) {
-		 m_pTcpMessages->removeAt(x);
-		 break;
-	  }
-   }
-   pMutex->unlock();
-   delete pMutex;
 }
 
 void tcp_thread::acceptConnection()
 {
    QTcpSocket * client = m_pServer->nextPendingConnection();
-   client->write("Hello there!\r\n");
-   client->flush();
 
    if (client) {
 	  connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
@@ -104,27 +73,30 @@ void tcp_thread::readFromClient()
    //! Points at the thing that called this member function,
    //! as well as casts it it a QTcpSocket.
    QTcpSocket * pClientSocket = qobject_cast<QTcpSocket *>(sender());
+   
+   QString text;/* to store the message */
 
-   QString text; TcpMessage toEnqueue;
-   for (;pClientSocket->canReadLine();) {
-	  QByteArray bae = pClientSocket->readLine();
-	  QString temp = QString(bae);
-	  text += temp.replace("\r\n", "");
+   QByteArray bae = pClientSocket->readLine();
+   QString temp = QString(bae);
+   QString hostname = pClientSocket->peerName();
+   text += temp.replace("\r\n", "");
+   if (text == "REQUEST_CLIENT") {
+	  /* this is a worker */
+	  worker_connection * w = new worker_connection(hostname, pClientSocket);
+	  Q_EMIT worker_connected(w);
+	  std::cerr<<"emmitted worker connect"<<std::endl;
+   } else if (text == "REQUEST_WORKER") {
+	  /* this is a client */
+	  client_connection * c = new client_connection(hostname, pClientSocket);
+	  Q_EMIT client_connected(c);
+	  std::cerr<<"emmitted client connect"<<std::endl;
+   } else {
+	  pClientSocket->write("BYE\r\n");
+	  pClientSocket->disconnectFromHost();
    }
-   if (text == tr(""))
-	  return;
-
-   toEnqueue.line = text;
-   toEnqueue.pSocket = pClientSocket;
-   m_pTcpMessages->enqueue(toEnqueue);
-   Q_EMIT receivedMessage();
-   /**
-	* @todo save the client somehow, probably through passing and delays.
-	* This will allow us to respond to them sometime. :)
-	*/
 }
 
-void tcp_thread::sendMessage(QString msg, QString request)
+void tcp_thread::sendMessage(QString msg, tcp_connection * request)
 {
    if (!writeData(msg.toUtf8(), request)) {
 	  std::cerr<<"Unable to write message \""<<msg.toStdString()<<"\" to client."<<std::endl;

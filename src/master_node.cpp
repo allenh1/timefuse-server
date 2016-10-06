@@ -50,7 +50,8 @@ bool master_node::init()
    m_p_thread = new QThread();
    /* construct the tcp_thread */
    m_p_tcp_thread = new tcp_thread(m_hostname, m_port);
-
+   m_p_tcp_thread->init();
+   
    /* establish connection handlers */
    std::cout<<"Establishing connection handlers..."<<std::endl;
    connect(m_p_tcp_thread, &tcp_thread::client_connected,
@@ -80,6 +81,7 @@ bool master_node::init()
  */
 void master_node::handle_client_connect(client_connection * _client)
 {
+   std::cerr<<"caught client connect"<<std::endl;
    /* lock the mutex guarding our semaphore */
    m_p_client_mutex->lock();
    /* release resources in the semaphore */
@@ -88,6 +90,7 @@ void master_node::handle_client_connect(client_connection * _client)
    m_client_connections.enqueue(_client);
    /* unlock the mutex */
    m_p_client_mutex->unlock();
+   std::cerr<<"added new client"<<std::endl;
 }
 
 /** 
@@ -101,6 +104,7 @@ void master_node::handle_client_connect(client_connection * _client)
  */
 void master_node::handle_worker_connect(worker_connection * _worker)
 {
+   std::cerr<<"caught worker connect"<<std::endl;
    /* lock the mutex guarding our semaphore */
    m_p_worker_mutex->lock();
    /* release resources in the semaphore */
@@ -109,6 +113,7 @@ void master_node::handle_worker_connect(worker_connection * _worker)
    m_worker_connections.enqueue(_worker);
    /* unlock the mutex */
    m_p_worker_mutex->unlock();
+   std::cerr<<"added new worker"<<std::endl;
 }
 
 /** 

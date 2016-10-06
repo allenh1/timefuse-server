@@ -11,17 +11,6 @@
 #include "worker_connection.hpp"
 #include "client_connection.hpp"
 
-struct TcpMessage {
-   QString line;
-   QTcpSocket * pSocket;
-
-   bool read = false;
-
-   bool operator == (TcpMessage m1) {
-	  return line == m1.line;
-   }
-};
-
 class tcp_thread : public QObject
 {
    Q_OBJECT
@@ -30,11 +19,11 @@ public:
    ~tcp_thread() { /** @todo This function is important, I suppose... **/ }
 
    bool init();
-   bool writeData(QByteArray data, QString match);
-
+   bool writeData(QByteArray data, tcp_connection * receiver);
+   
    Q_SLOT void disconnected();
    Q_SLOT void readFromClient();
-   Q_SLOT void sendMessage(QString, QString);
+   Q_SLOT void sendMessage(QString, tcp_connection * request);
    Q_SLOT void acceptConnection();
    Q_SLOT void stop(){ m_continue = false; }
 
@@ -59,34 +48,12 @@ public:
 
 	  else {
 		 for (int x = 0; x < queueSize; ++x) {
-			if (!m_pTcpMessages->at(x).read)
-			   ++size;
+			++size;
 		 }
 	  }
 	  pMutex->unlock();
 	  delete pMutex;
 	  return size;
-   }
-
-   QString getLastMessage() {
-	  QMutex * pMutex = new QMutex();
-	  pMutex->lock();
-	  QString line;
-	  for (int x = m_pTcpMessages->size() - 1; x >= 0; --x) {
-		 if (!m_pTcpMessages->at(x).read) {
-			line = m_pTcpMessages->at(x).line;
-			/**
-			 * @todo Apparently we actually have to replace this.
-			 */
-			TcpMessage temp = m_pTcpMessages->takeAt(x);
-			temp.read = true;
-			m_pTcpMessages->insert(x, temp);
-			break;
-		 }
-	  }
-	  pMutex->unlock();
-	  delete pMutex;
-	  return line;
    }
 
    const QTcpServer * getServer() { return m_pServer; }
@@ -99,6 +66,6 @@ private:
    quint16 m_port;
    quint16 m_blockSize;
 
-   QQueue<TcpMessage> * m_pTcpMessages;
+   QQueue<tcp_connection> * m_pTcpMessages;
 };
 #endif
