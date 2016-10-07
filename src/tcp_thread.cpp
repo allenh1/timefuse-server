@@ -83,12 +83,16 @@ void tcp_thread::readFromClient()
    if (text == "REQUEST_CLIENT") {
 	  /* this is a worker */
 	  worker_connection * w = new worker_connection(hostname, pClientSocket);
-	  Q_EMIT worker_connected(w);
+
+	  m_p_master_node->handle_worker_connect(w);
+
 	  std::cerr<<"emmitted worker connect"<<std::endl;
    } else if (text == "REQUEST_WORKER") {
 	  /* this is a client */
 	  client_connection * c = new client_connection(hostname, pClientSocket);
-	  Q_EMIT client_connected(c);
+
+	  m_p_master_node->handle_client_connect(c);
+	  
 	  std::cerr<<"emmitted client connect"<<std::endl;
    } else {
 	  pClientSocket->write("BYE\r\n");
@@ -101,4 +105,11 @@ void tcp_thread::sendMessage(QString msg, tcp_connection * request)
    if (!writeData(msg.toUtf8(), request)) {
 	  std::cerr<<"Unable to write message \""<<msg.toStdString()<<"\" to client."<<std::endl;
    }
+}
+
+void tcp_thread::send_pair_info(tcp_connection * request)
+{
+   /**
+    * @todo send the pair info the worker / client called request
+    */
 }

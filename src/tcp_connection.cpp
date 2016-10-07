@@ -41,4 +41,6 @@ void tcp_connection::disconnect()
    /**
 	* @todo Implement this function
 	*/
+   m_p_socket->write("BYE\r\n");
+   m_p_socket->disconnectFromHost();
 }

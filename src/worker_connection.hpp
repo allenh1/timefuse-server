@@ -15,6 +15,6 @@ public:
 	  );
    virtual ~worker_connection();
 
-   void add_client(const client_connection * c);
+   void add_client(client_connection * c);
 };
 #endif

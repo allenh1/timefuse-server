@@ -51,13 +51,9 @@ bool master_node::init()
    /* construct the tcp_thread */
    m_p_tcp_thread = new tcp_thread(m_hostname, m_port);
    m_p_tcp_thread->init();
-   
-   /* establish connection handlers */
-   std::cout<<"Establishing connection handlers..."<<std::endl;
-   connect(m_p_tcp_thread, &tcp_thread::client_connected,
-		   this, &master_node::handle_client_connect);
-   connect(m_p_tcp_thread, &tcp_thread::worker_connected,
-		   this, &master_node::handle_worker_connect);
+
+   /* give tcp thread a pointer to us */
+   m_p_tcp_thread->set_master(this);
 
    std::cout<<"Moving onto constructed thread..."<<std::endl;
    /* move onto the constructed thread */
