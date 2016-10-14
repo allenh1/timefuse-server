@@ -9,6 +9,7 @@
 /* File Includes */
 #include "tcp_thread.hpp"
 #include "thread_init_exception.hpp"
+#include "worker_connection_state.hpp"
 
 class tcp_thread;
 
@@ -39,6 +40,8 @@ private:
    tcp_thread * m_p_tcp_thread;
    QThread * m_p_thread;
 
+   connection_state state; /* state enum for the state machine */
+   
    quint16 sleep_time = 400;
 };
 #endif

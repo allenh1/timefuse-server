@@ -20,7 +20,7 @@ class tcp_thread : public QObject
 {
    Q_OBJECT
 public:
-   explicit tcp_thread(const QString & _hostname, const quint16 & _port, QObject * parent = NULL);
+   explicit tcp_thread(const QString & _hostname, const quint16 & _port, const bool & _master_mode = true, QObject * parent = NULL);
    ~tcp_thread() { /** @todo This function is important, I suppose... **/ }
 
    bool init();
@@ -73,7 +73,8 @@ private:
    QTcpServer * m_pServer;
 
    volatile bool m_continue = true;
-
+   volatile bool m_master_mode = false;
+   
    QString m_hostname;
    quint16 m_port;
    quint16 m_blockSize;

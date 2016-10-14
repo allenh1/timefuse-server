@@ -4,12 +4,14 @@
 tcp_thread::tcp_thread(
    const QString & _hostname,                /*  hostname for TCP thread construction  */
    const quint16 & _port,                    /* port on which we construct this server */
+   const bool & _master_mode,                /*         are we in master mode?         */
    QObject * parent                          /*         parent of this QObject         */
    )
    : QObject(parent)
 {
    m_hostname = _hostname;
    m_port = _port;
+   m_master_mode = _master_mode;
    m_pServer = new QTcpServer(this);
    m_pTcpMessages = new QQueue<tcp_connection>();
 }
@@ -80,23 +82,32 @@ void tcp_thread::readFromClient()
    QString temp = QString(bae);
    QString hostname = pClientSocket->peerName();
    text += temp.replace("\r\n", "");
-   if (text == "REQUEST_CLIENT") {
-	  /* this is a worker */
-	  worker_connection * w = new worker_connection(hostname, pClientSocket);
 
-	  m_p_master_node->handle_worker_connect(w);
+   /* this checks if we are a master or a worker */
+   if (m_master_mode) {
+	  if (text == "REQUEST_CLIENT") {
+		 /* this is a worker */
+		 worker_connection * w = new worker_connection(hostname, pClientSocket);
 
-	  std::cerr<<"emmitted worker connect"<<std::endl;
-   } else if (text == "REQUEST_WORKER") {
-	  /* this is a client */
-	  client_connection * c = new client_connection(hostname, pClientSocket);
+		 m_p_master_node->handle_worker_connect(w);
 
-	  m_p_master_node->handle_client_connect(c);
+		 std::cerr<<"emmitted worker connect"<<std::endl;
+	  } else if (text == "REQUEST_WORKER") {
+		 /* this is a client */
+		 client_connection * c = new client_connection(hostname, pClientSocket);
+
+		 m_p_master_node->handle_client_connect(c);
 	  
-	  std::cerr<<"emmitted client connect"<<std::endl;
+		 std::cerr<<"emmitted client connect"<<std::endl;
+	  } else {
+		 pClientSocket->write("BYE\r\n");
+		 pClientSocket->disconnectFromHost();
+	  }
    } else {
-	  pClientSocket->write("BYE\r\n");
-	  pClientSocket->disconnectFromHost();
+	  /**
+	   * @todo handle various client requests
+	   */
+	  std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
    }
 }
 
