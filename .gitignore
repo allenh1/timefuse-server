@@ -1,5 +1,8 @@
 *~
 *.pro.user
-bin/*	
+.qmake.stash
+timefuse-server
 Makefile
 */*~
+moc_*
+*.o
