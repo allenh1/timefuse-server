@@ -1,4 +1,4 @@
-QT += network core
+QT += network sql core
 CONFIG += c++14 debug
 
 SOURCES += src/main.cpp \
