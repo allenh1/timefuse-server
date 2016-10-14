@@ -54,3 +54,65 @@ void worker_node::run()
 	   */
    }
 }
+
+/**
+ *
+ */
+QSqlDatabase setup_db() {
+   const char *user, *pwd, *dbb, *host;
+   if ((user = getenv("DBUSR")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on user failed" );
+      return (QSqlDatabase) NULL;
+   } else if ((pwd = getenv("DBPASS")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on pwd failed" );
+      return (QSqlDatabase) NULL;
+   } else if ((pwd = getenv("DBNAME")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on db name failed" );
+      return (QSqlDatabase) NULL;
+   } else if((pwd = getenv("DBHOST")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on db host failed" );
+      return (QSqlDatabase)NULL;
+   }
+
+   QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
+
+   db.setHostName(host); db.setDatabaseName(dbb);
+   db.setUserName(user); db.setPassword(pwd);
+}
+
+
+/**
+ * create a new user in the database
+ *
+ * @param db
+ * @param user
+ */
+bool worker_node::insert_query(const User & user) {
+   QSqlDatabase db = setup_db();
+
+   if(!db.open()) {
+      std::cerr<<"Error! Fialed to open database connection!"<<std::endl;
+      return false;
+   }
+
+   QSqlQuery * query = new QSqlQuery(db);
+
+   query->prepare("INSERT INTO users (user_id, schedule_id, user_name passwd, email)"
+		  "VALUES (:user_id, :schedule_id, :user_name, :passwd, :email)");
+   query->bindValue(":user_id", user.get_user_id());
+   query->bindValue(":schedule_id", user.get_schedule_id());
+   query->bindValue(":user_name", user.get_username());
+   query->bindValue(":paswd", user.get_password());
+   query->bindValue(":email", user.get_email());
+
+   if((query->exec()) == NULL) {
+      perror("exec");
+      throw std::invalid_argument( "something failed in the insert query" );
+      return false;
+   }
+   return true;
+}

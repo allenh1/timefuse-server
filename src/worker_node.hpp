@@ -3,12 +3,15 @@
 #pragma once
 
 /* Qt Includes */
+#include <stdexcept>
 #include <QtNetwork>
+#include <QSqlQuery>
 #include <QtCore>
 
 /* File Includes */
 #include "tcp_thread.hpp"
 #include "thread_init_exception.hpp"
+#include "user.hpp"
 
 class tcp_thread;
 
@@ -40,5 +43,8 @@ private:
    QThread * m_p_thread;
 
    quint16 sleep_time = 400;
+
+   Q_SLOT QSqlDatabase setup_db();
+   Q_SLOT bool insert_query(const User & user);
 };
 #endif
