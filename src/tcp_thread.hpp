@@ -11,8 +11,10 @@
 #include "worker_connection.hpp"
 #include "client_connection.hpp"
 #include "master_node.hpp"
+#include "worker_node.hpp"
 
 class master_node;
+class worker_node;
 
 class tcp_thread : public QObject
 {
@@ -61,8 +63,11 @@ public:
    }
 
    void set_master(master_node * _p_master_node) { m_p_master_node = _p_master_node; }
+   void set_worker(worker_node * _p_worker_node) { m_p_worker_node = _p_worker_node; }
 
    const master_node * get_master() { return m_p_master_node; }
+   const worker_node * get_worker() { return m_p_worker_node; }
+   
    const QTcpServer * getServer() { return m_pServer; }
 private:
    QTcpServer * m_pServer;
@@ -74,7 +79,8 @@ private:
    quint16 m_blockSize;
 
    master_node * m_p_master_node;
-   
+   worker_node * m_p_worker_node;
+
    QQueue<tcp_connection> * m_pTcpMessages;
 };
 #endif

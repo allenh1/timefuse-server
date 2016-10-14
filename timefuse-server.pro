@@ -7,13 +7,16 @@ SOURCES += src/main.cpp \
 		   src/worker_connection.cpp \
 		   src/client_connection.cpp \
 		   src/tcp_connection.cpp \
-		   src/user.cpp
+		   src/user.cpp \
+		   src/worker_node.cpp
 		   
 HEADERS += src/master_node.hpp \
 		   src/tcp_thread.hpp \
 		   src/worker_connection.hpp \
 		   src/client_connection.hpp \
 		   src/tcp_connection.hpp \
-           src/user.hpp
+           src/user.hpp \
+		   src/worker_node.hpp \
+		   src/thread_init_exception.hpp
                    
 TARGET = timefuse-server
