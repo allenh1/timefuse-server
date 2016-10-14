@@ -91,7 +91,7 @@ QSqlDatabase setup_db() {
  * @param db
  * @param user
  */
-bool worker_node::insert_query(const User & user) {
+bool worker_node::insert_query(const user & u) {
    QSqlDatabase db = setup_db();
 
    if(!db.open()) {
@@ -103,11 +103,11 @@ bool worker_node::insert_query(const User & user) {
 
    query->prepare("INSERT INTO users (user_id, schedule_id, user_name passwd, email)"
 		  "VALUES (:user_id, :schedule_id, :user_name, :passwd, :email)");
-   query->bindValue(":user_id", user.get_user_id());
-   query->bindValue(":schedule_id", user.get_schedule_id());
-   query->bindValue(":user_name", user.get_username());
-   query->bindValue(":paswd", user.get_password());
-   query->bindValue(":email", user.get_email());
+   query->bindValue(":user_id", u.get_user_id());
+   query->bindValue(":schedule_id", u.get_schedule_id());
+   query->bindValue(":user_name", u.get_username());
+   query->bindValue(":paswd", u.get_password());
+   query->bindValue(":email", u.get_email());
 
    if((query->exec()) == NULL) {
       perror("exec");
