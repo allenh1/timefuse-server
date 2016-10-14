@@ -27,9 +27,14 @@ client_connection::~client_connection()
  *
  * @param w Worker to which we are being assigned.
  */
-void client_connection::add_worker(const worker_connection * w)
+void client_connection::add_worker(worker_connection * w)
 {
    /**
 	* @todo implement this function
 	*/
+   QTcpSocket * peer = (QTcpSocket*) w->get_socket();
+   QHostAddress worker_address(peer->peerAddress().toIPv4Address());
+   quint16 worker_port = peer->peerPort();
+   
+   std::cout<<"Added worker at "<<worker_address.toString().toStdString()<<":"<<worker_port<<std::endl;
 }

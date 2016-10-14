@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QtCore>
 
+#include <iostream>
+
 class tcp_connection : public QObject
 {
    Q_OBJECT

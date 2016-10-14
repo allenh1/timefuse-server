@@ -1,5 +1,7 @@
 #ifndef __MASTER_NODE_HPP__
 #define __MASTER_NODE_HPP__
+#pragma once
+
 /* Qt Includes */
 #include <QThread>
 #include <QtCore>
@@ -7,6 +9,8 @@
 /* File Includes */
 #include "tcp_thread.hpp"
 /* #include "slave.hpp" */
+
+class tcp_thread;
 
 /**
  * TimeFuse Master class.
@@ -21,8 +25,8 @@ class master_node : public QObject
 {
    Q_OBJECT
 public:
-   explicit master_node(const QString & _hostname,     /* master node's hostname */
-						const quint16 & _port,         /* master node's port num */
+   explicit master_node(const QString & _hostname,       /* master node's hostname */
+						const quint16 & _port,           /* master node's port num */
 						QObject * _p_parent = NULL       /* master node's parent   */
 	  );
    

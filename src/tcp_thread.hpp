@@ -10,6 +10,9 @@
 
 #include "worker_connection.hpp"
 #include "client_connection.hpp"
+#include "master_node.hpp"
+
+class master_node;
 
 class tcp_thread : public QObject
 {
@@ -26,7 +29,8 @@ public:
    Q_SLOT void sendMessage(QString, tcp_connection * request);
    Q_SLOT void acceptConnection();
    Q_SLOT void stop(){ m_continue = false; }
-
+   Q_SLOT void send_pair_info(tcp_connection * request);
+   
    Q_SIGNAL void readIt(QTcpSocket*);
    Q_SIGNAL void receivedMessage();
 
@@ -56,6 +60,9 @@ public:
 	  return size;
    }
 
+   void set_master(master_node * _p_master_node) { m_p_master_node = _p_master_node; }
+
+   const master_node * get_master() { return m_p_master_node; }
    const QTcpServer * getServer() { return m_pServer; }
 private:
    QTcpServer * m_pServer;
@@ -66,6 +73,8 @@ private:
    quint16 m_port;
    quint16 m_blockSize;
 
+   master_node * m_p_master_node;
+   
    QQueue<tcp_connection> * m_pTcpMessages;
 };
 #endif

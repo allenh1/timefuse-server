@@ -1,4 +1,5 @@
 QT += network
+CONFIG += c++14
 
 SOURCES += src/main.cpp \
            src/master_node.cpp \
