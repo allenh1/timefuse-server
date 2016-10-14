@@ -19,8 +19,25 @@ user::user(const QByteArray & b, QObject * _p_parent)
    : QObject(_p_parent)
 {
    /**
-	* @todo parse through byte array and extract data
-	*/
+    * @todo parse through byte array and extract data
+    */
+   if(b != (QByteArray)NULL) {
+      QString temp(b);
+      const QString & pipe = "|";
+
+      QStringList parsed = temp.split(pipe);
+   
+      if(parsed.size() != 4) {
+	 throw std::invalid_argument( "Unrecognized QByteArray syntax" );
+      }
+      m_email = parsed[0];
+      m_username_hash = parsed[1];
+      m_password_hash = parsed[2];
+      m_cell_phone = parsed[3];
+   } else {
+      throw std::invalid_argument( "QByteArray b is NULL" );
+   }
+   
 }
 
 /** 

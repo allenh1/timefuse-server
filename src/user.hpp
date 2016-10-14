@@ -1,6 +1,7 @@
 #ifndef __USER_HPP__
 #define __USER_HPP__
 #include <QtNetwork>
+#include <stdexcept>
 #include <QtCore>
 
 class user : public QObject
