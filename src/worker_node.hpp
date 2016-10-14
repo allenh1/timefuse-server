@@ -7,6 +7,7 @@
 #include <QtCore>
 
 /* File Includes */
+#include "tcp_comm.hpp"
 #include "tcp_thread.hpp"
 #include "thread_init_exception.hpp"
 #include "worker_connection_state.hpp"
@@ -32,14 +33,22 @@ public:
    Q_SLOT void stop() { m_continue = false; }
    Q_SLOT void start_thread() { m_p_thread->start(); }
 
-   void set_master_hostname();
-   void set_master_port();
+   void set_master_hostname(const QString & _master_host) {
+	  m_master_host = _master_host;
+   }
+
+   void set_master_port(const quint16 & _master_port) {
+	  m_master_port = _master_port;
+   }
 private:
    volatile bool m_continue = true;
    
-   QString m_hostname;
+   QString m_host;
    quint16 m_port;
 
+   QString m_master_host = "localhost";
+   quint16 m_master_port = 3224;
+   
    tcp_thread * m_p_tcp_thread;
    QThread * m_p_thread;
 

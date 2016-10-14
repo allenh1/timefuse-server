@@ -1,8 +1,7 @@
 #ifndef __TCP_COMM_HPP__
 #define __TCP_COMM_HPP__
+#include <QtNetwork>
 #include <QtCore>
-#include <QObject>
-#include <QTcpSocket>
 
 class tcp_comm : public QObject
 {
@@ -12,15 +11,15 @@ public:
 	  { m_p_mutex = new QMutex(); }
    virtual ~tcp_comm() { delete m_p_mutex; }
    
-   QString * getHost()  { return &m_host; }
+   QString * get_host()  { return &m_host; }
 
    static const unsigned int MAX_RESPONSE = 100 * 1024;
    /* 0.5 second timieout */
    static const unsigned int TIMEOUT = 500;
 
-   void setHost(QString host) {
+   void set_host(QString _host) {
 	  m_p_mutex->lock();
-	  m_host = host;
+	  m_host = _host;
 	  m_p_mutex->unlock();
    }
 
@@ -35,7 +34,7 @@ public:
 	  return toReturn;
    }
 
-   int sendCommand(char *  host, int port, char * command, char * response) {
+   int send_text(char *  host, int port, char * command, char * response) {
 	  m_p_mutex->lock();
 	  QTcpSocket * pSocket = new QTcpSocket();
 
@@ -70,6 +69,7 @@ public:
 	  delete pSocket;
 	  return 1;
    }
+
 private:
    QString m_host;
    QMutex * m_p_mutex;
