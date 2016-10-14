@@ -31,6 +31,9 @@ public:
    Q_SLOT void run();
    Q_SLOT void stop() { m_continue = false; }
    Q_SLOT void start_thread() { m_p_thread->start(); }
+
+   void set_master_hostname();
+   void set_master_port();
 private:
    volatile bool m_continue = true;
    

@@ -17,6 +17,7 @@ HEADERS += src/master_node.hpp \
 		   src/tcp_connection.hpp \
            src/user.hpp \
 		   src/worker_node.hpp \
-		   src/thread_init_exception.hpp
-                   
+		   src/thread_init_exception.hpp \
+           src/tcp_comm.hpp
+		   
 TARGET = timefuse-server
