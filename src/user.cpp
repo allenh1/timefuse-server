@@ -40,6 +40,16 @@ user::user(const QByteArray & b, QObject * _p_parent)
    
 }
 
+user::user(const user & other)
+{
+   this->m_email = other.m_email;
+   this->m_username_hash = other.m_username_hash;
+   this->m_password_hash = other.m_password_hash;
+   this->m_cell_phone = other.m_cell_phone;
+   this->m_user_id = other.m_user_id;
+   this->m_schedule_id = other.m_schedule_id;   
+}
+
 /** 
  * Destructor for a user.
  */

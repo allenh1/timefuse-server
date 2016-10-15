@@ -10,6 +10,7 @@ class user : public QObject
 public:
    explicit user(QObject * _p_parent = NULL);
    explicit user(const QByteArray & b, QObject * _p_parent = NULL);
+   explicit user(const user & other);
    virtual ~user();
 
    const QString & get_email() { return m_email; }
