@@ -33,6 +33,9 @@ public:
    Q_SLOT void run();
    Q_SLOT void stop() { m_continue = false; }
    Q_SLOT void start_thread() { m_p_thread->start(); }
+
+   Q_SLOT QSqlDatabase setup_db();
+   Q_SLOT bool insert_query(user u);
 private:
    volatile bool m_continue = true;
    
@@ -43,8 +46,5 @@ private:
    QThread * m_p_thread;
 
    quint16 sleep_time = 400;
-
-   Q_SLOT QSqlDatabase setup_db();
-   Q_SLOT bool insert_query(const user & u);
 };
 #endif

@@ -63,25 +63,23 @@ QSqlDatabase setup_db() {
    if ((user = getenv("DBUSR")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on user failed" );
-      return (QSqlDatabase) NULL;
    } else if ((pwd = getenv("DBPASS")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on pwd failed" );
-      return (QSqlDatabase) NULL;
    } else if ((pwd = getenv("DBNAME")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db name failed" );
-      return (QSqlDatabase) NULL;
    } else if((pwd = getenv("DBHOST")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db host failed" );
-      return (QSqlDatabase)NULL;
    }
 
    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
 
    db.setHostName(host); db.setDatabaseName(dbb);
    db.setUserName(user); db.setPassword(pwd);
+
+   return db;
 }
 
 
@@ -91,7 +89,7 @@ QSqlDatabase setup_db() {
  * @param db
  * @param user
  */
-bool worker_node::insert_query(const user & u) {
+bool worker_node::insert_query(user u) {
    QSqlDatabase db = setup_db();
 
    if(!db.open()) {
