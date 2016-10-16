@@ -86,12 +86,23 @@ void tcp_thread::readFromClient()
    /* this checks if we are a master or a worker */
    if (m_master_mode) {
 	  if (text == "REQUEST_CLIENT") {
-		 /* this is a worker */
-		 worker_connection * w = new worker_connection(hostname, pClientSocket);
+		 /* check for the next line */
+		 if (!pClientSocket->canReadLine()) {
+			std::cerr<<"Invalid request"<<std::endl;
+			pClientSocket->write("BYE\r\n");
+			pClientSocket->disconnectFromHost();
+		 } QString worker_host_port = pClientSocket->readLine();
 
-		 m_p_master_node->handle_worker_connect(w);
-
-		 std::cerr<<"emmitted worker connect"<<std::endl;
+		 std::cout<<"worker connection received."<<std::endl;
+		 try {
+			worker_connection * w = new worker_connection(worker_host_port, pClientSocket);
+			m_p_master_node->handle_worker_connect(w);
+			m_tcp_connections.push_back(w);
+			std::cout<<"adding new worker at address "<<worker_host_port.toStdString()<<std::endl;
+		 } catch ( ... ) {
+			std::cerr<<"Exception caught"<<std::endl;
+		 }
+		 
 	  } else if (text == "REQUEST_WORKER") {
 		 /* this is a client */
 		 client_connection * c = new client_connection(hostname, pClientSocket);
@@ -123,4 +134,15 @@ void tcp_thread::send_pair_info(tcp_connection * request)
    /**
     * @todo send the pair info the worker / client called request
     */
+   QTcpSocket * p = (QTcpSocket *) request->get_socket();
+   if (dynamic_cast<worker_node *>(request) != NULL) {
+	  /* instance of a worker */
+	  p->write("OK\r\n");
+   } else {
+	  /* instance of a client */
+	  
+   }
+
+   /* disconnect the socket */
+   p->disconnectFromHost();
 }

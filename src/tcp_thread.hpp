@@ -83,5 +83,6 @@ private:
    worker_node * m_p_worker_node;
 
    QQueue<tcp_connection> * m_pTcpMessages;
+   QList<tcp_connection*> m_tcp_connections;
 };
 #endif

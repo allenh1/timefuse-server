@@ -29,12 +29,7 @@ client_connection::~client_connection()
  */
 void client_connection::add_worker(worker_connection * w)
 {
-   /**
-	* @todo implement this function
-	*/
-   QTcpSocket * peer = (QTcpSocket*) w->get_socket();
-   QHostAddress worker_address(peer->peerAddress().toIPv4Address());
-   quint16 worker_port = peer->peerPort();
-   
-   std::cout<<"Added worker at "<<worker_address.toString().toStdString()<<":"<<worker_port<<std::endl;
+   std::cout<<"Added worker location: "
+			<<(m_paired_host = w->get_hostname()).toStdString()
+			<<std::endl;
 }

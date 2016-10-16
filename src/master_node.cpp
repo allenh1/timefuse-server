@@ -153,7 +153,15 @@ void master_node::run()
 		 handle_client_connect(c);
 		 /* unlock worker mutex */
 		 m_p_worker_mutex->unlock();
-		 continue;
+		 /* lock the worker mutex */
+		 m_p_worker_mutex->lock();
+		 /* release resources in the semaphore */
+		 m_p_client_sema->release();
+		 /* enqueue the client */
+		 m_client_connections.enqueue(c);
+		 /* unlock the mutex */
+		 m_p_client_mutex->unlock();
+ 		 continue;
 	  }
 
 	  /* try to acquire a worker */
@@ -167,8 +175,5 @@ void master_node::run()
 
 	  /* send worker to client */
 	  c->add_worker(w);
-
-	  /* disconnect worker and client */
-	  w->disconnect(); c->disconnect();
    }
 }
