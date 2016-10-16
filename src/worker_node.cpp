@@ -110,3 +110,62 @@ void worker_node::run()
    }
 }
 
+/**
+ * Unter doesn't know how to spell worker. (Unter=Hunter)
+ */
+QSqlDatabase worker_node::setup_db() {
+   const char *user, *pwd, *dbb, *host;
+   if ((user = getenv("DBUSR")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on user failed" );
+   } else if ((pwd = getenv("DBPASS")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on pwd failed" );
+   } else if ((pwd = getenv("DBNAME")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on db name failed" );
+   } else if((pwd = getenv("DBHOST")) == NULL) {
+      perror("getenv");
+      throw std::invalid_argument( "getenv on db host failed" );
+   }
+
+   QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
+
+   db.setHostName(host); db.setDatabaseName(dbb);
+   db.setUserName(user); db.setPassword(pwd);
+
+   return db;
+}
+
+
+/**
+ * create a new user in the database
+ *
+ * @param db
+ * @param user
+ */
+bool worker_node::insert_query(user & u) {
+   QSqlDatabase db = setup_db();
+
+   if(!db.open()) {
+      std::cerr<<"Error! Fialed to open database connection!"<<std::endl;
+      return false;
+   }
+
+   QSqlQuery * query = new QSqlQuery(db);
+
+   query->prepare("INSERT INTO users (user_id, schedule_id, user_name passwd, email)"
+		  "VALUES (:user_id, :schedule_id, :user_name, :passwd, :email)");
+   query->bindValue(":user_id", u.get_user_id());
+   query->bindValue(":schedule_id", u.get_schedule_id());
+   query->bindValue(":user_name", u.get_username());
+   query->bindValue(":paswd", u.get_password());
+   query->bindValue(":email", u.get_email());
+
+   if((query->exec()) == NULL) {
+      perror("exec");
+      throw std::invalid_argument( "something failed in the insert query" );
+      return false;
+   }
+   return true;
+}
