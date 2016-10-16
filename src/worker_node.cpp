@@ -111,9 +111,9 @@ void worker_node::run()
 }
 
 /**
- *
+ * Unter doesn't know how to spell worker. (Unter=Hunter)
  */
-QSqlDatabase woker_node::setup_db() {
+QSqlDatabase worker_node::setup_db() {
    const char *user, *pwd, *dbb, *host;
    if ((user = getenv("DBUSR")) == NULL) {
       perror("getenv");
