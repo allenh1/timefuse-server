@@ -121,10 +121,10 @@ QSqlDatabase worker_node::setup_db() {
    } else if ((pwd = getenv("DBPASS")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on pwd failed" );
-   } else if ((pwd = getenv("DBNAME")) == NULL) {
+   } else if ((dbb = getenv("DBNAME")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db name failed" );
-   } else if((pwd = getenv("DBHOST")) == NULL) {
+   } else if((host = getenv("DBHOST")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db host failed" );
    }
