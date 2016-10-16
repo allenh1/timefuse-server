@@ -1,6 +1,8 @@
 QT = core network sql testlib
 CONFIG += c++14 debug
 
+QTPLUGIN += QSQLMYSQL
+
 SOURCES = testsqlqueries.cpp
 
 SOURCES += ../src/master_node.cpp \
