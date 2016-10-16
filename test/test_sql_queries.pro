@@ -1,4 +1,4 @@
-QT += core network sql testlib widgets
+QT = core network sql testlib
 
 SOURCES = testsqlqueries.cpp
 

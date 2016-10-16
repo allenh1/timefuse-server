@@ -6,3 +6,4 @@ Makefile
 */*~
 moc_*
 *.o
+test/test_sql_queries
