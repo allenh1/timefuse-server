@@ -1,8 +1,17 @@
 stages:
   - build
+  - test
 
 compile:
   stage: build
   script:
     - qmake -qt=qt5
     - make
+
+test_sql_queries:
+  stage: test
+  script:
+    - cd test
+    - qmake -qt=qt5
+    - make
+    - ./test_sql_queries

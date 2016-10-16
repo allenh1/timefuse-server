@@ -114,7 +114,7 @@ void worker_node::run()
  * Unter doesn't know how to spell worker. (Unter=Hunter)
  */
 QSqlDatabase worker_node::setup_db() {
-   const char *user, *pwd, *dbb, *host;
+   const char *user, *pwd, *dbb, *host, *port_string;
    if ((user = getenv("DBUSR")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on user failed" );
@@ -124,16 +124,20 @@ QSqlDatabase worker_node::setup_db() {
    } else if ((dbb = getenv("DBNAME")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db name failed" );
-   } else if((host = getenv("DBHOST")) == NULL) {
+   } else if ((host = getenv("DBHOST")) == NULL) {
       perror("getenv");
       throw std::invalid_argument( "getenv on db host failed" );
+   } else if ((port_string = getenv("DBPORT")) == NULL) {
+	  perror("getenv");
+	  throw std::invalid_argument("getenv on db host failed");
    }
 
    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
-
+   quint64 port = std::stoi(std::string(port_string));
+							
    db.setHostName(host); db.setDatabaseName(dbb);
    db.setUserName(user); db.setPassword(pwd);
-
+   db.setPort(port);
    return db;
 }
 
@@ -148,24 +152,58 @@ bool worker_node::insert_query(user & u) {
    QSqlDatabase db = setup_db();
 
    if(!db.open()) {
-      std::cerr<<"Error! Fialed to open database connection!"<<std::endl;
+      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
       return false;
    }
 
-   QSqlQuery * query = new QSqlQuery(db);
+   QSqlQuery * query = new QSqlQuery(db); 
+   QString user_query_string = "INSERT INTO users(user_id, schedule_id, user_name, passwd, email)";
+   QString schedule_item_string ="INSERT INTO schedules(schedule_id) VALUES ('-1');";
+   user_query_string += " VALUES('" + u.get_user_id() + "', '" + u.get_schedule_id() + "', '" + u.get_username()
+ 	                 +  "', '" + u.get_password() + "', '" + u.get_email() + "');";
 
-   query->prepare("INSERT INTO users (user_id, schedule_id, user_name passwd, email)"
-		  "VALUES (:user_id, :schedule_id, :user_name, :passwd, :email)");
-   query->bindValue(":user_id", u.get_user_id());
-   query->bindValue(":schedule_id", u.get_schedule_id());
-   query->bindValue(":user_name", u.get_username());
-   query->bindValue(":paswd", u.get_password());
-   query->bindValue(":email", u.get_email());
+   query->prepare(schedule_item_string);
+   if((query->exec()) == NULL) {
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  throw std::invalid_argument("something failed in the insert query");
+	  return false;
+   } delete query;
+
+   query = new QSqlQuery(db);
+   query->prepare(user_query_string);
+   if((query->exec()) == NULL) {
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  throw std::invalid_argument("something failed in the insert query");
+	  return false;
+   } delete query;
+
+   /* now we remove the inserted */
+   QString delete_user = "DELETE FROM users WHERE user_id = '-1'";
+   QString delete_schedule_item = "DELETE FROM schedules WHERE schedule_id = '-1'";
+   query = new QSqlQuery(db);
+   query->prepare(delete_user);
 
    if((query->exec()) == NULL) {
-      perror("exec");
-      throw std::invalid_argument( "something failed in the insert query" );
-      return false;
-   }
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  throw std::invalid_argument("something failed in the insert query");
+	  return false;
+   } delete query;
+
+   query = new QSqlQuery(db);
+   query->prepare(delete_schedule_item);
+
+   if((query->exec()) == NULL) {
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  throw std::invalid_argument("something failed in the insert query");
+	  return false;
+   } delete query;
    return true;
 }
