@@ -33,7 +33,7 @@ bool tcp_thread::init()
 bool tcp_thread::writeData(QByteArray data, tcp_connection * receiver)
 {
    QDataStream out(&data, QIODevice::WriteOnly);
-   out.setVersion(QDataStream::Qt_5_6);
+   out.setVersion(QDataStream::Qt_5_5);
    
    QTcpSocket * to_receive = (QTcpSocket*) receiver->get_socket();
 
