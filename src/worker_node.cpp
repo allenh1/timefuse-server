@@ -113,7 +113,7 @@ void worker_node::run()
 /**
  *
  */
-QSqlDatabase setup_db() {
+QSqlDatabase woker_node::setup_db() {
    const char *user, *pwd, *dbb, *host;
    if ((user = getenv("DBUSR")) == NULL) {
       perror("getenv");
