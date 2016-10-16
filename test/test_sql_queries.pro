@@ -1,4 +1,5 @@
 QT = core network sql testlib
+CONFIG += c++14 debug
 
 SOURCES = testsqlqueries.cpp
 
@@ -19,4 +20,3 @@ HEADERS += ../src/master_node.hpp \
 		   ../src/worker_node.hpp \
 		   ../src/thread_init_exception.hpp \
 		   ../src/tcp_comm.hpp
-		   

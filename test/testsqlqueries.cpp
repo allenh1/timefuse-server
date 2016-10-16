@@ -1,17 +1,14 @@
 #include <QtTest/QtTest>
 #include "../src/worker_node.hpp"
-#include "../src/worker_node.cpp"
-#include "../src/tcp_thread.hpp"
-#include "../src/tcp_thread.cpp"
 
-class TestQString: public QObject
+class test_sql_queries: public QObject
 {
    Q_OBJECT
 private slots:
-   void toUpper();
+   void test_insert();
 };
 
-void TestQString::toUpper()
+void test_sql_queries::test_insert()
 {
    QString hostname = "localhost";
    quint16 port = 3442;
@@ -28,5 +25,5 @@ void TestQString::toUpper()
    QVERIFY(worker.insert_query(billy));
 }
 
-QTEST_MAIN(TestQString)
+QTEST_MAIN(test_sql_queries)
 #include "testsqlqueries.moc"
