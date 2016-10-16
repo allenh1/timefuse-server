@@ -15,4 +15,3 @@ test_sql_queries:
 	- qmake -qt=qt5
 	- make
 	- ./test_sql_queries
-	
