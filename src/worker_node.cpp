@@ -53,7 +53,7 @@ void worker_node::run()
    state = connection_state::CONNECT_TO_MASTER;
 
    QTcpSocket * pSocket = NULL;
-   QString read;
+   QString read, our_tcp_server, port_string;
    
    for (; m_continue; m_p_thread->msleep(sleep_time)) {
 	  if (state == connection_state::CONNECT_TO_MASTER) goto connect_to_master;
@@ -82,6 +82,12 @@ void worker_node::run()
 
 	  /* write the greeting message to the master_node */
 	  pSocket->write("REQUEST_CLIENT\r\n");
+	  /* write our location to the server */
+	  our_tcp_server = m_host + ":";
+	  port_string; port_string.setNum(m_port);
+	  our_tcp_server += port_string + "\r\n" + '\0';
+	  pSocket->write(our_tcp_server.toStdString().c_str()); /* write the next line */
+	  
 	  /* wait until the bytes have been written, unlimited time. */
 	  pSocket->waitForBytesWritten(-1);
 
