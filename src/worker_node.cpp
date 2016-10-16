@@ -89,7 +89,7 @@ QSqlDatabase setup_db() {
  * @param db
  * @param user
  */
-bool worker_node::insert_query(user u) {
+bool worker_node::insert_query(user & u) {
    QSqlDatabase db = setup_db();
 
    if(!db.open()) {

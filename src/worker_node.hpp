@@ -35,7 +35,7 @@ public:
    Q_SLOT void start_thread() { m_p_thread->start(); }
 
    Q_SLOT QSqlDatabase setup_db();
-   Q_SLOT bool insert_query(user u);
+   Q_SLOT bool insert_query(user & u);
 private:
    volatile bool m_continue = true;
    
