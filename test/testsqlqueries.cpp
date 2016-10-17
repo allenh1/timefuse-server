@@ -23,6 +23,7 @@ void test_sql_queries::test_insert()
    billy.set_schedule_id("-1");
 
    QVERIFY(worker.insert_query(billy));
+   QVERIFY(worker.cleanup_db_insert());
 }
 
 QTEST_MAIN(test_sql_queries)

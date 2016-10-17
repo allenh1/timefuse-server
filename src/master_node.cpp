@@ -63,6 +63,9 @@ bool master_node::init()
 		   this, &master_node::run);
    /* finally, start the thread. */
    m_p_thread->start();
+
+   connect(this, &master_node::send_info,
+		   m_p_tcp_thread, &tcp_thread::send_pair_info);
    return m_p_thread->isRunning();
 }
 
@@ -170,10 +173,14 @@ void master_node::run()
 	  /* unlock the worker mutex */
 	  m_p_worker_mutex->unlock();
 
-	  /* send client to worker */
+	  /* send client to worker */	  
 	  w->add_client(c);
 
 	  /* send worker to client */
 	  c->add_worker(w);
+
+	  /* send pair info */
+	  Q_EMIT(send_info(w));
+	  Q_EMIT(send_info(c));
    }
 }

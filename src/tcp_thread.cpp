@@ -131,16 +131,20 @@ void tcp_thread::sendMessage(QString msg, tcp_connection * request)
 
 void tcp_thread::send_pair_info(tcp_connection * request)
 {
-   /**
-    * @todo send the pair info the worker / client called request
-    */
    QTcpSocket * p = (QTcpSocket *) request->get_socket();
-   if (dynamic_cast<worker_node *>(request) != NULL) {
+   worker_connection * w = dynamic_cast<worker_connection *>(request);
+   client_connection * c = dynamic_cast<client_connection *>(request);
+   
+   if (w != NULL) {
 	  /* instance of a worker */
 	  p->write("OK\r\n");
-   } else {
+   } else if (c != NULL) {
+	  std::cerr<<"closing client connection"<<std::endl;
 	  /* instance of a client */
+	  client_connection * c = dynamic_cast<client_connection *>(request);
 	  
+	  QString paired_host = c->get_paired_hostname() + "\r\n" + '\0';
+	  p->write(paired_host.toStdString().c_str());
    }
 
    /* disconnect the socket */

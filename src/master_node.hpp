@@ -37,6 +37,8 @@ public:
    /* Thread's Run Function */
    Q_SLOT void run();
 
+   Q_SIGNAL void send_info(tcp_connection * receiver);
+
    /* Callback functions for tcp connections */
    Q_SLOT void handle_client_connect(client_connection * _client);
    Q_SLOT void handle_worker_connect(worker_connection * _worker);
