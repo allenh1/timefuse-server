@@ -156,8 +156,8 @@ void master_node::run()
 		 handle_client_connect(c);
 		 /* unlock worker mutex */
 		 m_p_worker_mutex->unlock();
-		 /* lock the worker mutex */
-		 m_p_worker_mutex->lock();
+		 /* lock the client mutex */
+		 m_p_client_mutex->lock();
 		 /* release resources in the semaphore */
 		 m_p_client_sema->release();
 		 /* enqueue the client */
