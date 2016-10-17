@@ -53,7 +53,7 @@ void worker_node::run()
    state = connection_state::CONNECT_TO_MASTER;
 
    QTcpSocket * pSocket = NULL;
-   QString read;
+   QString read, our_tcp_server, port_string;
    
    for (; m_continue; m_p_thread->msleep(sleep_time)) {
 	  if (state == connection_state::CONNECT_TO_MASTER) goto connect_to_master;
@@ -82,6 +82,12 @@ void worker_node::run()
 
 	  /* write the greeting message to the master_node */
 	  pSocket->write("REQUEST_CLIENT\r\n");
+	  /* write our location to the server */
+	  our_tcp_server = m_host + ":";
+	  port_string; port_string.setNum(m_port);
+	  our_tcp_server += port_string + "\r\n" + '\0';
+	  pSocket->write(our_tcp_server.toStdString().c_str()); /* write the next line */
+	  
 	  /* wait until the bytes have been written, unlimited time. */
 	  pSocket->waitForBytesWritten(-1);
 
@@ -93,13 +99,22 @@ void worker_node::run()
 	  pSocket->waitForReadyRead();
 	  for (; pSocket->canReadLine(); read += pSocket->readLine());
 
+	  /* check that we have things. Otherwise, loop again. */
+	  if (read.size() == 0) goto end;
+	  read.replace("\r\n", "");
 	  std::cout<<"I read \""<<read.toStdString()<<"\""<<std::endl;
+	  if (read == "OK") {
+		 state = connection_state::WAIT_FOR_CLIENT_CONNECT;
+		 pSocket->disconnectFromHost();
+		 delete pSocket;
+		 pSocket = NULL;
+		 goto connect_client;
+	  }
 	  /* now disconnect from the master */
    disconnect_master:
-	  std::cout<<"state: DISCONNECT_MASTER"<<std::endl;
-	  pSocket->abort();
-   connect_client:
 	  /* @todo */
+   connect_client:
+	  goto end;
    process_job:
 	  /* @todo */
    disconnect_client:
@@ -180,18 +195,36 @@ bool worker_node::insert_query(user & u) {
 	  throw std::invalid_argument("something failed in the insert query");
 	  return false;
    } delete query;
+   return true;
+}
 
+/**
+ * @brief cleanup after testcase
+ *
+ * DO NOT CALL THIS FUNCTION. This is
+ * strictly for cleaning up after a test case.
+ *
+ * @return true, we hope.
+ */
+bool worker_node::cleanup_db_insert()
+{
+    QSqlDatabase db = setup_db();
+
+   if(!db.open()) {
+      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+      return false;
+   }
    /* now we remove the inserted */
    QString delete_user = "DELETE FROM users WHERE user_id = '-1'";
    QString delete_schedule_item = "DELETE FROM schedules WHERE schedule_id = '-1'";
-   query = new QSqlQuery(db);
+   QSqlQuery * query = new QSqlQuery(db);
    query->prepare(delete_user);
 
    if((query->exec()) == NULL) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
-	  throw std::invalid_argument("something failed in the insert query");
+	  throw std::invalid_argument("something failed in deleting the schedule");
 	  return false;
    } delete query;
 
@@ -202,7 +235,7 @@ bool worker_node::insert_query(user & u) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
-	  throw std::invalid_argument("something failed in the insert query");
+	  throw std::invalid_argument("something failed in deletion of a user.");
 	  return false;
    } delete query;
    return true;

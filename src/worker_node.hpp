@@ -38,7 +38,8 @@ public:
 
    Q_SLOT QSqlDatabase setup_db();
    Q_SLOT bool insert_query(user & u);
-
+   bool cleanup_db_insert();
+   
    void set_master_hostname(const QString & _master_host) {
 	  m_master_host = _master_host;
    }

@@ -15,5 +15,8 @@ public:
    virtual ~client_connection();
 
    void add_worker(worker_connection * w);
+   const QString & get_paired_hostname() { return m_paired_host; }
+private:
+   QString m_paired_host;
 };
 #endif

@@ -63,6 +63,9 @@ bool master_node::init()
 		   this, &master_node::run);
    /* finally, start the thread. */
    m_p_thread->start();
+
+   connect(this, &master_node::send_info,
+		   m_p_tcp_thread, &tcp_thread::send_pair_info);
    return m_p_thread->isRunning();
 }
 
@@ -153,7 +156,15 @@ void master_node::run()
 		 handle_client_connect(c);
 		 /* unlock worker mutex */
 		 m_p_worker_mutex->unlock();
-		 continue;
+		 /* lock the client mutex */
+		 m_p_client_mutex->lock();
+		 /* release resources in the semaphore */
+		 m_p_client_sema->release();
+		 /* enqueue the client */
+		 m_client_connections.enqueue(c);
+		 /* unlock the mutex */
+		 m_p_client_mutex->unlock();
+ 		 continue;
 	  }
 
 	  /* try to acquire a worker */
@@ -162,13 +173,14 @@ void master_node::run()
 	  /* unlock the worker mutex */
 	  m_p_worker_mutex->unlock();
 
-	  /* send client to worker */
+	  /* send client to worker */	  
 	  w->add_client(c);
 
 	  /* send worker to client */
 	  c->add_worker(w);
 
-	  /* disconnect worker and client */
-	  w->disconnect(); c->disconnect();
+	  /* send pair info */
+	  Q_EMIT(send_info(w));
+	  Q_EMIT(send_info(c));
    }
 }
