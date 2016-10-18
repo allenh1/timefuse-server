@@ -163,7 +163,7 @@ QSqlDatabase worker_node::setup_db() {
  * @param db
  * @param user
  */
-bool worker_node::insert_query(user & u) {
+bool worker_node::insert_user(user & u) {
    QSqlDatabase db = setup_db();
 
    if(!db.open()) {
@@ -195,6 +195,41 @@ bool worker_node::insert_query(user & u) {
 	  throw std::invalid_argument("something failed in the insert query");
 	  return false;
    } delete query;
+   return true;
+}
+
+bool worker_node::select_user(user & u) {
+   QSqlDatabase db = setup_db();
+
+    if(!db.open()) {
+      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+      return false;
+   }
+
+   QSqlQuery * query = new QSqlQuery(db);
+   int numRows;
+   
+   QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
+   user_stuff += "user_name = " + u.get_username() + " AND passwd = " + u.get_password();
+
+   if((query->exec(user_stuff)) == NULL) {
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  throw std::invalid_argument("something failed in the select query");
+	  return false;
+   } 
+
+   QVariant user_id = query->value(0);
+   QVariant schedule_id = query->value(1);
+   QVariant email = query->value(2);
+   QVariant cellphone = query->value(3);
+
+   u.set_email((const QString&)email);
+   u.set_user_id((const QString&)user_id);
+   u.set_cell((const QString&)cellphone);
+   u.set_schedule_id((const QString&)schedule_id);
+   delete query;
    return true;
 }
 
