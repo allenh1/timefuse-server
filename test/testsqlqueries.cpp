@@ -50,6 +50,8 @@ void test_sql_queries::test_select()
    QVERIFY(worker.select_user(found_billy));
    QVERIFY(found_billy.get_email() == billy.get_email());
    QVERIFY(found_billy.get_user_id() == billy.get_user_id());
+   
+   QVERIFY(worker.cleanup_db_insert());
 }
 
 QTEST_MAIN(test_sql_queries)
