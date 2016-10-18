@@ -216,7 +216,7 @@ bool worker_node::select_user(user & u) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
-	  user_stuff = "Something failed in select query: " + user_stuff;
+	  user_stuff = "Something failed in select query:\n" + user_stuff;
 	  std::string str = user_stuff.toStdString();
 	  throw std::invalid_argument(str);
 	  return false;
