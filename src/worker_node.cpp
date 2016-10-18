@@ -8,6 +8,7 @@ worker_node::worker_node(const QString & _host, const quint16 & _port, QObject *
    /**
     * @todo verify nothing else needs to be done here.
     */
+   m_db = setup_db();
 }
 
 worker_node::~worker_node()
@@ -163,15 +164,13 @@ QSqlDatabase worker_node::setup_db() {
  * @param db
  * @param user
  */
-bool worker_node::insert_query(user & u) {
-   QSqlDatabase db = setup_db();
-
-   if(!db.open()) {
+bool worker_node::insert_user(user & u) {
+   if(!m_db.open()) {
       std::cerr<<"Error! Failed to open database connection!"<<std::endl;
       return false;
    }
 
-   QSqlQuery * query = new QSqlQuery(db); 
+   QSqlQuery * query = new QSqlQuery(m_db); 
    QString user_query_string = "INSERT INTO users(user_id, schedule_id, user_name, passwd, email)";
    QString schedule_item_string ="INSERT INTO schedules(schedule_id) VALUES ('-1');";
    user_query_string += " VALUES('" + u.get_user_id() + "', '" + u.get_schedule_id() + "', '" + u.get_username()
@@ -186,14 +185,69 @@ bool worker_node::insert_query(user & u) {
 	  return false;
    } delete query;
 
-   query = new QSqlQuery(db);
+   query = new QSqlQuery(m_db);
    query->prepare(user_query_string);
    if((query->exec()) == NULL) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  std::string str = "Something failed in insert query:\n"
+	     + query->lastQuery().toStdString();
 	  delete query;
-	  throw std::invalid_argument("something failed in the insert query");
+	  throw std::invalid_argument(str);
 	  return false;
+   } delete query;
+   return true;
+}
+
+bool worker_node::select_user(user & u) {
+    if(!m_db.open()) {
+      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+      return false;
+   }
+
+    QSqlQuery * query = new QSqlQuery(m_db);
+    int numRows;
+   
+   QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
+   user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
+
+   if((query->exec(user_stuff)) == NULL) {
+	  std::cerr<<"Query Failed to execute!"<<std::endl;
+	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  delete query;
+	  user_stuff = "Something failed in select query:\n" + user_stuff;
+	  std::string str = user_stuff.toStdString();
+	  throw std::invalid_argument(str);
+	  return false;
+   } 
+
+   int id_col = query->record().indexOf("user_id");
+   int sched_id_col = query->record().indexOf("schedule_id");
+   int email_col = query->record().indexOf("email");
+   int cell_col = query->record().indexOf("cellphone");
+   bool set_cell = false;
+   QVariant user_id, schedule_id, email, cellphone;
+
+   for (; query->next(); ) {
+	  if (id_col != -1) user_id = query->value(id_col);
+	  else throw std::invalid_argument("No user_id column returned");
+   
+	  if (sched_id_col != -1) schedule_id = query->value(sched_id_col);
+	  else throw std::invalid_argument("No schedule_id column returned");
+
+	  if (email_col != -1) email = query->value(email_col);
+	  else throw std::invalid_argument("No email column returned");
+
+	  if (cell_col != -1) cellphone = query->value(cell_col), set_cell = true;   
+
+	  QString db_email = email.toString();
+	  QString db_user_id = user_id.toString();
+	  QString db_schedule_id = schedule_id.toString();
+	  QString db_cell = cellphone.toString();
+	  u.set_email(db_email);
+	  u.set_user_id(db_user_id);
+	  if (db_cell.size()) u.set_cell(db_cell);
+	  u.set_schedule_id(db_schedule_id);
    } delete query;
    return true;
 }
@@ -208,16 +262,14 @@ bool worker_node::insert_query(user & u) {
  */
 bool worker_node::cleanup_db_insert()
 {
-    QSqlDatabase db = setup_db();
-
-   if(!db.open()) {
+   if(!m_db.open()) {
       std::cerr<<"Error! Failed to open database connection!"<<std::endl;
       return false;
    }
    /* now we remove the inserted */
    QString delete_user = "DELETE FROM users WHERE user_id = '-1'";
    QString delete_schedule_item = "DELETE FROM schedules WHERE schedule_id = '-1'";
-   QSqlQuery * query = new QSqlQuery(db);
+   QSqlQuery * query = new QSqlQuery(m_db);
    query->prepare(delete_user);
 
    if((query->exec()) == NULL) {
@@ -228,7 +280,7 @@ bool worker_node::cleanup_db_insert()
 	  return false;
    } delete query;
 
-   query = new QSqlQuery(db);
+   query = new QSqlQuery(m_db);
    query->prepare(delete_schedule_item);
 
    if((query->exec()) == NULL) {
@@ -237,6 +289,6 @@ bool worker_node::cleanup_db_insert()
 	  delete query;
 	  throw std::invalid_argument("something failed in deletion of a user.");
 	  return false;
-   } delete query;
+   } delete query; m_db.close();
    return true;
 }

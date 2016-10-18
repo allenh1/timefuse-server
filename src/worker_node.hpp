@@ -5,6 +5,7 @@
 /* Qt Includes */
 #include <stdexcept>
 #include <QtNetwork>
+#include <QSqlRecord>
 #include <QSqlQuery>
 #include <QtCore>
 
@@ -37,7 +38,8 @@ public:
    Q_SLOT void start_thread() { m_p_thread->start(); }
 
    Q_SLOT QSqlDatabase setup_db();
-   Q_SLOT bool insert_query(user & u);
+   Q_SLOT bool insert_user(user & u);
+   Q_SLOT bool select_user(user & u);
    bool cleanup_db_insert();
    
    void set_master_hostname(const QString & _master_host) {
@@ -62,5 +64,6 @@ private:
    connection_state state; /* state enum for the state machine */
    
    quint16 sleep_time = 400;
+   QSqlDatabase m_db;
 };
 #endif
