@@ -210,7 +210,7 @@ bool worker_node::select_user(user & u) {
    int numRows;
    
    QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
-   user_stuff += "user_name = " + u.get_username() + " AND passwd = " + u.get_password();
+   user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "'";
 
    if((query->exec(user_stuff)) == NULL) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
