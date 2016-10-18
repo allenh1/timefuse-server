@@ -191,8 +191,10 @@ bool worker_node::insert_user(user & u) {
    if((query->exec()) == NULL) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	  std::string str = "Something failed in insert query:\n"
+	     + query->lastQuery().toStdString();
 	  delete query;
-	  throw std::invalid_argument("something failed in the insert query");
+	  throw std::invalid_argument(str);
 	  return false;
    } delete query;
    return true;
