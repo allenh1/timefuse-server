@@ -5,6 +5,7 @@
 /* Qt Includes */
 #include <stdexcept>
 #include <QtNetwork>
+#include <QSqlRecord>
 #include <QSqlQuery>
 #include <QtCore>
 
@@ -63,7 +64,6 @@ private:
    connection_state state; /* state enum for the state machine */
    
    quint16 sleep_time = 400;
-
    QSqlDatabase m_db;
 };
 #endif

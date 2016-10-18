@@ -195,7 +195,7 @@ bool worker_node::insert_user(user & u) {
 	  delete query;
 	  throw std::invalid_argument(str);
 	  return false;
-   } delete query; m_db.close();
+   } delete query;
    return true;
 }
 
@@ -221,17 +221,34 @@ bool worker_node::select_user(user & u) {
 	  return false;
    } 
 
-   QVariant user_id = query->value(0);
-   QVariant schedule_id = query->value(1);
-   QVariant email = query->value(2);
-   QVariant cellphone = query->value(3);
+   int id_col = query->record().indexOf("user_id");
+   int sched_id_col = query->record().indexOf("schedule_id");
+   int email_col = query->record().indexOf("email");
+   int cell_col = query->record().indexOf("cellphone");
+   bool set_cell = false;
+   QVariant user_id, schedule_id, email, cellphone;
 
-   u.set_email((const QString&)email);
-   u.set_user_id((const QString&)user_id);
-   u.set_cell((const QString&)cellphone);
-   u.set_schedule_id((const QString&)schedule_id);
-   delete query;
-   m_db.close();
+   for (; query->next(); ) {
+	  if (id_col != -1) user_id = query->value(id_col);
+	  else throw std::invalid_argument("No user_id column returned");
+   
+	  if (sched_id_col != -1) schedule_id = query->value(sched_id_col);
+	  else throw std::invalid_argument("No schedule_id column returned");
+
+	  if (email_col != -1) email = query->value(email_col);
+	  else throw std::invalid_argument("No email column returned");
+
+	  if (cell_col != -1) cellphone = query->value(cell_col), set_cell = true;   
+
+	  QString db_email = email.toString();
+	  QString db_user_id = user_id.toString();
+	  QString db_schedule_id = schedule_id.toString();
+	  QString db_cell = cellphone.toString();
+	  u.set_email(db_email);
+	  u.set_user_id(db_user_id);
+	  if (db_cell.size()) u.set_cell(db_cell);
+	  u.set_schedule_id(db_schedule_id);
+   } delete query;
    return true;
 }
 
