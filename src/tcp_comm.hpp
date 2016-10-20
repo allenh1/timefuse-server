@@ -34,7 +34,7 @@ public:
 	  return toReturn;
    }
 
-   int send_text(char *  host, int port, char * command, char * response) {
+   int send_text(int port, char * command, char * response) {
 	  m_p_mutex->lock();
 	  QTcpSocket * pSocket = new QTcpSocket();
 

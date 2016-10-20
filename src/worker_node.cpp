@@ -85,7 +85,7 @@ void worker_node::run()
 	  pSocket->write("REQUEST_CLIENT\r\n");
 	  /* write our location to the server */
 	  our_tcp_server = m_host + ":";
-	  port_string; port_string.setNum(m_port);
+	  port_string.setNum(m_port);
 	  our_tcp_server += port_string + "\r\n" + '\0';
 	  pSocket->write(our_tcp_server.toStdString().c_str()); /* write the next line */
 	  
@@ -112,7 +112,7 @@ void worker_node::run()
 		 goto connect_client;
 	  }
 	  /* now disconnect from the master */
-   disconnect_master:
+	  /* disconnect_master: */
 	  /* @todo */
    connect_client:
 	  goto end;
@@ -170,13 +170,12 @@ bool worker_node::insert_user(user & u) {
    }
 
    QSqlQuery * query = new QSqlQuery(m_db); 
-   QString user_query_string = "INSERT INTO users(user_id, schedule_id, user_name, passwd, email)";
-   QString schedule_item_string ="INSERT INTO schedules(schedule_id) VALUES ('-1');";
-   user_query_string += " VALUES('" + u.get_user_id() + "', '" + u.get_schedule_id() + "', '" + u.get_username()
- 	                 +  "', '" + u.get_password() + "', '" + u.get_email() + "');";
+   QString user_query_string = "INSERT INTO users(user_name, schedule_id, passwd, email)";
+   QString schedule_item_string = "INSERT INTO schedules(owner) VALUES(";
+   schedule_item_string += "'" + u.get_username() + "');";
 
    query->prepare(schedule_item_string);
-   if((query->exec()) == NULL) {
+   if(!query->exec()) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
@@ -184,9 +183,14 @@ bool worker_node::insert_user(user & u) {
 	  return false;
    } delete query;
 
+   if (!select_schedule_id(u)) throw std::invalid_argument("Something bad happened!");
+   
+   user_query_string += " VALUES('" + u.get_username() + "', '" + u.get_schedule_id() 
+                 	 +  "', '" + u.get_password() + "', '" + u.get_email() + "');";
+
    query = new QSqlQuery(m_db);
    query->prepare(user_query_string);
-   if((query->exec()) == NULL) {
+   if(!query->exec()) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  std::string str = "Something failed in insert query:\n"
@@ -198,33 +202,60 @@ bool worker_node::insert_user(user & u) {
    return true;
 }
 
-bool worker_node::select_user(user & u) {
-    if(!m_db.open()) {
-      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+bool worker_node::select_schedule_id(user & u)
+{
+   if(!m_db.open()) {
+	  std::cerr<<"Error! Failed to open database connection!"<<std::endl;
       return false;
    }
 
-    QSqlQuery * query = new QSqlQuery(m_db);
-    int numRows;
+   QSqlQuery * query = new QSqlQuery(m_db);
    
-   QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
-   user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
+   QString schedule_select = "SELECT schedule_id FROM schedules WHERE ";
+   schedule_select += "owner = '" + u.get_username() + "';";
 
-   if(!query->exec(user_stuff)) {
-	  std::cerr<<"Query Failed to execute!"<<std::endl;
+   if (!query->exec(schedule_select)) {
+	  std::cerr<<"Query failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
-	  delete query;
-	  user_stuff = "Something failed in select query:\n" + user_stuff;
-	  std::string str = user_stuff.toStdString();
+	  schedule_select = "Something failed in select query:\n" + schedule_select;
+	  std::string str = schedule_select.toStdString(); delete query;
 	  throw std::invalid_argument(str);
 	  return false;
    } else if (!query->size()) return false;
 
+   /* now extract the schedule id and set in our referenced object */
+   register int sched_id_col = query->record().indexOf("schedule_id");
+   QString schedule_id;
+   if (sched_id_col != -1) u.set_schedule_id(query->value(sched_id_col).toString());
+   else throw std::invalid_argument("No schedule_id column returned");
+   return true;
+}
+
+bool worker_node::select_user(user & u) {
+    if(!m_db.open()) {
+      std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+      return false;
+	}
+
+    QSqlQuery * query = new QSqlQuery(m_db);
+   
+	QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
+	user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
+
+	if(!query->exec(user_stuff)) {
+	   std::cerr<<"Query Failed to execute!"<<std::endl;
+	   std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+	   delete query;
+	   user_stuff = "Something failed in select query:\n" + user_stuff;
+	   std::string str = user_stuff.toStdString();
+	   throw std::invalid_argument(str);
+	   return false;
+	} else if (!query->size()) return false;
+	
    int id_col = query->record().indexOf("user_id");
    int sched_id_col = query->record().indexOf("schedule_id");
    int email_col = query->record().indexOf("email");
    int cell_col = query->record().indexOf("cellphone");
-   bool set_cell = false;
    QVariant user_id, schedule_id, email, cellphone;
 
    for (; query->next(); ) {
@@ -237,7 +268,7 @@ bool worker_node::select_user(user & u) {
 	  if (email_col != -1) email = query->value(email_col);
 	  else throw std::invalid_argument("No email column returned");
 
-	  if (cell_col != -1) cellphone = query->value(cell_col), set_cell = true;   
+	  if (cell_col != -1) cellphone = query->value(cell_col);
 
 	  QString db_email = email.toString();
 	  QString db_user_id = user_id.toString();
@@ -286,7 +317,7 @@ bool worker_node::cleanup_db_insert()
    QSqlQuery * query = new QSqlQuery(m_db);
    query->prepare(delete_user);
 
-   if((query->exec()) == NULL) {
+   if (!query->exec()) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
@@ -297,7 +328,7 @@ bool worker_node::cleanup_db_insert()
    query = new QSqlQuery(m_db);
    query->prepare(delete_schedule_item);
 
-   if((query->exec()) == NULL) {
+   if (!query->exec()) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
