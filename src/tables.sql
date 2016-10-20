@@ -1,5 +1,7 @@
 CREATE TABLE IF NOT EXISTS schedules(
 	schedule_id INTEGER NOT NULL AUTO_INCREMENT,
+	-- owner is not a "real" field, just makes incrementing work.
+	owner VARCHAR(512) NOT NULL, -- fill with the user/group name.
 	PRIMARY KEY(schedule_id)
 );
 
