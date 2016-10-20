@@ -157,12 +157,11 @@ QSqlDatabase worker_node::setup_db() {
    return db;
 }
 
-
 /**
- * create a new user in the database
+ * @brief insert a user to the database.
  *
- * @param db
- * @param user
+ * @param u User to insert
+ * @return True if the insertion succeeded.
  */
 bool worker_node::insert_user(user & u) {
    if(!m_db.open()) {
@@ -211,7 +210,7 @@ bool worker_node::select_user(user & u) {
    QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
    user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
 
-   if((query->exec(user_stuff)) == NULL) {
+   if(!query->exec(user_stuff)) {
 	  std::cerr<<"Query Failed to execute!"<<std::endl;
 	  std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
 	  delete query;
@@ -219,7 +218,7 @@ bool worker_node::select_user(user & u) {
 	  std::string str = user_stuff.toStdString();
 	  throw std::invalid_argument(str);
 	  return false;
-   } 
+   } else if (!query->size()) return false;
 
    int id_col = query->record().indexOf("user_id");
    int sched_id_col = query->record().indexOf("schedule_id");
@@ -250,6 +249,21 @@ bool worker_node::select_user(user & u) {
 	  u.set_schedule_id(db_schedule_id);
    } delete query;
    return true;
+}
+
+/**
+ * @brief Try to login.
+ *
+ * @param _user Encrypted username.
+ * @param _password Encrypted password.
+ * @return True upon authentication.
+ */
+bool worker_node::try_login(const QString & _user, const QString & _password)
+{
+   user u; /* temporary user to fill. set username and password. */
+   u.set_username(_user); u.set_password(_password);
+
+   return select_user(u);
 }
 
 /**
