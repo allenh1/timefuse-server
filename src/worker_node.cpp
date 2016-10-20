@@ -225,7 +225,7 @@ bool worker_node::select_schedule_id(user & u)
 
    /* now extract the schedule id and set in our referenced object */
    register int sched_id_col = query->record().indexOf("schedule_id");
-   QString schedule_id;
+   query->next();
    if (sched_id_col != -1) u.set_schedule_id(query->value(sched_id_col).toString());
    else throw std::invalid_argument("No schedule_id column returned");
    return true;
@@ -334,6 +334,6 @@ bool worker_node::cleanup_db_insert()
 	  delete query;
 	  throw std::invalid_argument("something failed in deletion of a user.");
 	  return false;
-   } delete query; m_db.close();
+   } delete query;
    return true;
 }
