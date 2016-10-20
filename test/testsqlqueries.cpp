@@ -45,7 +45,8 @@ void test_sql_queries::test_select()
 
    QVERIFY(m_p_worker->select_user(found_billy));
    QVERIFY(found_billy.get_email() == billy.get_email());
-   QVERIFY(found_billy.get_user_id() == billy.get_user_id());
+   QVERIFY(found_billy.get_username() == "billy");
+   QVERIFY(found_billy.get_password() == "password123!");
    
    QVERIFY(m_p_worker->cleanup_db_insert());
 }
@@ -62,6 +63,10 @@ void test_sql_queries::test_login()
    QVERIFY(m_p_worker->insert_user(billy));
    /* try to login with the proper credentials */
    QVERIFY(m_p_worker->try_login("billy", "password123!"));
+   QVERIFY(!m_p_worker->try_login("fake", "morefake"));
+   QVERIFY(!m_p_worker->try_login("billy", "morefake"));
+   QVERIFY(!m_p_worker->try_login("fake", "password123!"));
+   
    /* remove user from database */
    QVERIFY(m_p_worker->cleanup_db_insert());
 }

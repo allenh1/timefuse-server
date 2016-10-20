@@ -312,8 +312,8 @@ bool worker_node::cleanup_db_insert()
       return false;
    }
    /* now we remove the inserted */
-   QString delete_user = "DELETE FROM users WHERE user_id = '-1'";
-   QString delete_schedule_item = "DELETE FROM schedules WHERE schedule_id = '-1'";
+   QString delete_user = "DELETE FROM users WHERE user_name = 'billy'";
+   QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy'";
    QSqlQuery * query = new QSqlQuery(m_db);
    query->prepare(delete_user);
 
