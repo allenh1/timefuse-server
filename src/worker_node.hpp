@@ -29,8 +29,12 @@ public:
    virtual ~worker_node();
 
    bool init();
+
    bool try_login(const QString & _user,
 				  const QString & _password);
+   bool try_create(const QString & _user,
+				   const QString & _password,
+				   const QString & _email);
    
    Q_SIGNAL void established_client_connection();
    Q_SIGNAL void finished_client_job();

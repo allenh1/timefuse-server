@@ -283,6 +283,22 @@ bool worker_node::select_user(user & u) {
 }
 
 /**
+ * @brief Try to create an account.
+ *
+ * @param _user Encrypted username.
+ * @param _password Encrypted password.
+ * @param _email Unencrypted email
+ * @return True upon successful creation.
+ */
+bool worker_node::try_create(const QString & _user, const QString & _password, const QString & _email)
+{
+   user u;
+   u.set_username(_user); u.set_password(_password); u.set_email(_email);
+
+   return insert_user(u);
+}
+
+/**
  * @brief Try to login.
  *
  * @param _user Encrypted username.

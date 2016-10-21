@@ -13,6 +13,7 @@ private slots:
    void test_insert();
    void test_select();
    void test_login();
+   void test_create();
 private:
    worker_node * m_p_worker;
 };
@@ -67,6 +68,18 @@ void test_sql_queries::test_login()
    QVERIFY(!m_p_worker->try_login("billy", "morefake"));
    QVERIFY(!m_p_worker->try_login("fake", "password123!"));
    
+   /* remove user from database */
+   QVERIFY(m_p_worker->cleanup_db_insert());
+}
+
+void test_sql_queries::test_create()
+{
+   /* try and create a user */
+   QVERIFY(m_p_worker->try_create("billy", "password123!", "billy@domain.com"));
+   QVERIFY(!m_p_worker->try_create("billy", "asdf", "bibbiliybk@domain.wrong"));
+   QVERIFY(!m_p_worker->try_create("billy", "", "billy@domain.com"));
+   QVERIFY(!m_p_worker->try_create("billy", "password123!", ""));
+   QVERIFY(!m_p_worker->try_create("", "password123!", "billy@domain.com"));
    /* remove user from database */
    QVERIFY(m_p_worker->cleanup_db_insert());
 }
