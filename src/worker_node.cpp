@@ -167,7 +167,7 @@ bool worker_node::insert_user(user & u) {
 	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
-	}
+	} else if (!u.get_username().size()) return false;
 
 	QSqlQuery * query = new QSqlQuery(m_db); 
 	QString user_query_string = "INSERT INTO users(user_name, schedule_id, passwd, email)";
@@ -209,7 +209,7 @@ bool worker_node::username_exists(const QString & _user)
 		/**
 		 * @todo probably shouldn't return false here
 		 */
-		return false;
+		return true;
 	}
 
 	QSqlQuery * query = new QSqlQuery(m_db);
@@ -225,8 +225,8 @@ bool worker_node::username_exists(const QString & _user)
 		/**
 		 * @todo again, probably should not return false.
 		 */
-		return false;
-	} else if (!query->size()) return true;
+		return true;
+	} else if (query->size()) return true;
 	return false;
 }
 
@@ -320,8 +320,8 @@ bool worker_node::select_user(user & u) {
  */
 bool worker_node::try_create(const QString & _user, const QString & _password, const QString & _email)
 {
-	user u;
-	u.set_username(_user); u.set_password(_password); u.set_email(_email);
+	user u; u.set_email(_email);
+	u.set_username(_user); u.set_password(_password);
 
 	return !username_exists(_user) && insert_user(u);
 }
