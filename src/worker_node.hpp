@@ -58,6 +58,11 @@ public:
    void set_master_port(const quint16 & _master_port) {
 	  m_master_port = _master_port;
    }
+
+   Q_SIGNAL void disconnect_client(tcp_connection * client,
+								   QString * _p_msg);
+   Q_SLOT void request_create_account(QString * _p_text,
+										QTcpSocket * _p_socket);
 private:
    volatile bool m_continue = true;
    
@@ -74,5 +79,6 @@ private:
    
    quint16 sleep_time = 400;
    QSqlDatabase m_db;
+   volatile bool served_client = false;
 };
 #endif

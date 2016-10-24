@@ -41,7 +41,8 @@ bool worker_node::init()
 	connect(m_p_thread, &QThread::started, this, &worker_node::run);
 	connect(this, &worker_node::finished_client_job, this, &worker_node::stop);
 	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);
-
+	connect(m_p_tcp_thread, &tcp_thread::got_create_account, this, &worker_node::request_create_account);
+	connect(this, &worker_node::disconnect_client, m_p_tcp_thread, &tcp_thread::disconnect_client);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
@@ -49,7 +50,6 @@ bool worker_node::init()
 void worker_node::run()
 {
 	std::cout<<"Worker Thread started"<<std::endl;
-
 	/* initialize the state machine with a connect to master */
 	state = connection_state::CONNECT_TO_MASTER;
 
@@ -59,12 +59,9 @@ void worker_node::run()
 	for (; m_continue; m_p_thread->msleep(sleep_time)) {
 		if (state == connection_state::CONNECT_TO_MASTER) goto connect_to_master;
 		else if (state == connection_state::WAIT_FOR_JOB) goto wait_for_job;
-		else if (state == connection_state::WAIT_FOR_CLIENT_CONNECT) goto connect_client;
-		else if (state == connection_state::PROCESS_JOB) goto process_job;
-		else if (state == connection_state::DISCONNECT_CLIENT) goto disconnect_client;
-		else goto disconnect_client;
-	  
+		else if (state == connection_state::WAIT_FOR_CLIENT_CONNECT) goto wait_for_client;
 	connect_to_master:
+		served_client = false;
 		std::cout<<"state: CONNECT_TO_MASTER"<<std::endl;
 		if (pSocket != NULL) delete pSocket;
 		pSocket = new QTcpSocket();
@@ -109,19 +106,12 @@ void worker_node::run()
 			pSocket->disconnectFromHost();
 			delete pSocket;
 			pSocket = NULL;
-			goto connect_client;
-		}
-		/* now disconnect from the master */
-		/* disconnect_master: */
-		/* @todo */
-	connect_client:
-		goto end;
-	process_job:
-		/* @todo */
-	disconnect_client:
-		/* @todo */
-
+			goto end;
+		} served_client = false;
+	wait_for_client:
+		for (;;) if (served_client) goto end;
 	end:
+		state = connection_state::CONNECT_TO_MASTER;
 		continue; /* go around again */
 	}
 }
@@ -380,4 +370,43 @@ bool worker_node::cleanup_db_insert()
 		return false;
 	} delete query;
 	return true;
+}
+
+void worker_node::request_create_account(QString * _p_text,
+										   QTcpSocket * _p_socket)
+{
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+	
+	/* split along ':' characters */
+	QStringList separated = _p_text->split(":");
+	
+	if (separated.size() < 3) {
+		/* if there are not enough params, disconnect. */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		Q_EMIT(disconnect_client(p, msg));
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	QString _mail = separated[2];
+	QString _cell = (separated.size() > 3) ? separated[3] : "";
+
+	if (username_exists(_user)) {
+		/* the user exists. Invalid request. */
+		QString * msg = new QString("ERROR: EXISTING USER\r\n");
+		Q_EMIT(disconnect_client(p, msg));
+	}
+	QString * msg;
+	/* try to insert the user */
+	try {
+		
+		if (!try_create(_user, _pass, _mail)) {
+			msg = new QString("ERROR: DB INSERT FAILED\r\n");
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB INSERT FAILED\r\n");
+	} Q_EMIT(disconnect_client(p, msg));
+	served_client = true;
 }
