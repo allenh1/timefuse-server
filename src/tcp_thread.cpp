@@ -120,7 +120,8 @@ void tcp_thread::readFromClient()
 		 std::cout<<"create account received"<<std::endl;
 		 /* remove CREATE_ACCOUNT from the string */
 		 text.replace("CREATE_ACCOUNT ", "");
-		 Q_EMIT(got_create_account(new QString(text), pClientSocket));
+		 QString * temp = new QString(text);
+		 Q_EMIT(got_create_account(temp, pClientSocket));
 	  } else {
 		 std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;}
    }

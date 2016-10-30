@@ -3,7 +3,8 @@
 worker_node::worker_node(const QString & _host, const quint16 & _port, QObject * _p_parent)
 	: QObject(_p_parent),
 	  m_host(_host),
-	  m_port(_port)
+	  m_port(_port),
+	  m_p_mutex(new QMutex())
 {
 	/**
 	 * @todo verify nothing else needs to be done here.
@@ -40,8 +41,7 @@ bool worker_node::init()
 	/* connect signals */
 	connect(m_p_thread, &QThread::started, this, &worker_node::run);
 	connect(this, &worker_node::finished_client_job, this, &worker_node::stop);
-	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);
-	connect(m_p_tcp_thread, &tcp_thread::got_create_account, this, &worker_node::request_create_account);
+	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);	
 	connect(this, &worker_node::disconnect_client, m_p_tcp_thread, &tcp_thread::disconnect_client);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -55,7 +55,8 @@ void worker_node::run()
 
 	QTcpSocket * pSocket = NULL;
 	QString read, our_tcp_server, port_string;
-   
+	bool served;
+	
 	for (; m_continue; m_p_thread->msleep(sleep_time)) {
 		if (state == connection_state::CONNECT_TO_MASTER) goto connect_to_master;
 		else if (state == connection_state::WAIT_FOR_JOB) goto wait_for_job;
@@ -106,10 +107,16 @@ void worker_node::run()
 			pSocket->disconnectFromHost();
 			delete pSocket;
 			pSocket = NULL;
-			goto end;
-		} served_client = false;
+		} m_p_mutex->lock();
+		served_client = false;
+		m_p_mutex->unlock();
 	wait_for_client:
-		for (;;) if (served_client) goto end;
+		for (;;m_p_thread->msleep(sleep_time)) {
+			m_p_mutex->lock();
+			served = served_client;
+			m_p_mutex->unlock();
+			if (served) goto end;
+		}
 	end:
 		state = connection_state::CONNECT_TO_MASTER;
 		continue; /* go around again */
@@ -373,8 +380,9 @@ bool worker_node::cleanup_db_insert()
 }
 
 void worker_node::request_create_account(QString * _p_text,
-										   QTcpSocket * _p_socket)
+										 QTcpSocket * _p_socket)
 {
+	std::cout<<"create account request: \""<<_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
 	QString client_host = _p_socket->peerName();
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
@@ -408,5 +416,7 @@ void worker_node::request_create_account(QString * _p_text,
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB INSERT FAILED\r\n");
 	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
 	served_client = true;
+	m_p_mutex->unlock();
 }
