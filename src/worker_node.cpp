@@ -43,6 +43,9 @@ bool worker_node::init()
 	connect(this, &worker_node::finished_client_job, this, &worker_node::stop);
 	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);	
 	connect(this, &worker_node::disconnect_client, m_p_tcp_thread, &tcp_thread::disconnect_client);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_account,
+			this, &worker_node::request_create_account,
+			Qt::DirectConnection);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
