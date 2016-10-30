@@ -114,7 +114,7 @@ void worker_node::run()
 		served_client = false;
 		m_p_mutex->unlock();
 	wait_for_client:
-		for (;;m_p_thread->msleep(sleep_time)) {
+		for (;;m_p_thread->msleep(sleep_time >> 4)) {
 			m_p_mutex->lock();
 			served = served_client;
 			m_p_mutex->unlock();
@@ -226,8 +226,8 @@ bool worker_node::username_exists(const QString & _user)
 		 * @todo again, probably should not return false.
 		 */
 		return true;
-	} else if (query->size()) return true;
-	return false;
+	} else if (query->size()) return delete query, true;
+	return delete query, false;
 }
 
 bool worker_node::select_schedule_id(user & u)
@@ -249,14 +249,14 @@ bool worker_node::select_schedule_id(user & u)
 		std::string str = schedule_select.toStdString(); delete query;
 		throw std::invalid_argument(str);
 		return false;
-	} else if (!query->size()) return false;
+	} else if (!query->size()) return delete query, false;
 
 	/* now extract the schedule id and set in our referenced object */
 	register int sched_id_col = query->record().indexOf("schedule_id");
 	query->next();
 	if (sched_id_col != -1) u.set_schedule_id(query->value(sched_id_col).toString());
 	else throw std::invalid_argument("No schedule_id column returned");
-	return true;
+	return delete query, true;
 }
 
 bool worker_node::select_user(user & u) {
@@ -396,7 +396,11 @@ void worker_node::request_create_account(QString * _p_text,
 	if (separated.size() < 3) {
 		/* if there are not enough params, disconnect. */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
 		Q_EMIT(disconnect_client(p, msg));
+		return;
 	}
 
 	QString _user = separated[0];
@@ -407,7 +411,11 @@ void worker_node::request_create_account(QString * _p_text,
 	if (username_exists(_user)) {
 		/* the user exists. Invalid request. */
 		QString * msg = new QString("ERROR: EXISTING USER\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();		
 		Q_EMIT(disconnect_client(p, msg));
+		return;
 	}
 	QString * msg;
 	/* try to insert the user */
@@ -415,6 +423,11 @@ void worker_node::request_create_account(QString * _p_text,
 		
 		if (!try_create(_user, _pass, _mail)) {
 			msg = new QString("ERROR: DB INSERT FAILED\r\n");
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
 		} else msg = new QString("OK\r\n");
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB INSERT FAILED\r\n");
@@ -422,4 +435,5 @@ void worker_node::request_create_account(QString * _p_text,
 	m_p_mutex->lock();
 	served_client = true;
 	m_p_mutex->unlock();
+	delete _p_text;
 }

@@ -160,5 +160,5 @@ void tcp_thread::disconnect_client(tcp_connection * client, QString * _p_msg)
 {
    QTcpSocket * p = (QTcpSocket *) client->get_socket();
    p->write(_p_msg->toUtf8()); delete _p_msg;
-   p->disconnectFromHost();
+   p->disconnectFromHost(); delete client;
 }
