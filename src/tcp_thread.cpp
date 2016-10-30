@@ -115,10 +115,15 @@ void tcp_thread::readFromClient()
 		 pClientSocket->disconnectFromHost();
 	  }
    } else {
-	  /**
-	   * @todo handle various client requests
-	   */
-	  std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
+	  /* check for CREATE_ACCOUNT command */
+	  if (text.contains("CREATE_ACCOUNT")) {
+		 std::cout<<"create account received"<<std::endl;
+		 /* remove CREATE_ACCOUNT from the string */
+		 text.replace("CREATE_ACCOUNT ", "");
+		 QString * temp = new QString(text);
+		 Q_EMIT(got_create_account(temp, pClientSocket));
+	  } else {
+		 std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;}
    }
 }
 
@@ -149,4 +154,11 @@ void tcp_thread::send_pair_info(tcp_connection * request)
 
    /* disconnect the socket */
    p->disconnectFromHost();
+}
+
+void tcp_thread::disconnect_client(tcp_connection * client, QString * _p_msg)
+{
+   QTcpSocket * p = (QTcpSocket *) client->get_socket();
+   p->write(_p_msg->toUtf8()); delete _p_msg;
+   p->disconnectFromHost(); delete client;
 }

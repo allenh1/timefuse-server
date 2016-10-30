@@ -32,10 +32,11 @@ public:
    Q_SLOT void acceptConnection();
    Q_SLOT void stop(){ m_continue = false; }
    Q_SLOT void send_pair_info(tcp_connection * request);
-   
+   Q_SLOT void disconnect_client(tcp_connection *, QString *);
    Q_SIGNAL void readIt(QTcpSocket*);
    Q_SIGNAL void receivedMessage();
 
+   Q_SIGNAL void got_create_account(QString *, QTcpSocket *);
    Q_SIGNAL void worker_connected(worker_connection * _worker);
    Q_SIGNAL void client_connected(client_connection * _client);
    

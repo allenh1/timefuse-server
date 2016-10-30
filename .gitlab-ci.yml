@@ -12,6 +12,6 @@ test_sql_queries:
   stage: test
   script:
     - cd test
-    - qmake -qt=qt5
+    - qmake -qt=qt5 test_sql_queries.pro
     - make
     - ./test_sql_queries

@@ -3,7 +3,8 @@
 worker_node::worker_node(const QString & _host, const quint16 & _port, QObject * _p_parent)
 	: QObject(_p_parent),
 	  m_host(_host),
-	  m_port(_port)
+	  m_port(_port),
+	  m_p_mutex(new QMutex())
 {
 	/**
 	 * @todo verify nothing else needs to be done here.
@@ -40,8 +41,11 @@ bool worker_node::init()
 	/* connect signals */
 	connect(m_p_thread, &QThread::started, this, &worker_node::run);
 	connect(this, &worker_node::finished_client_job, this, &worker_node::stop);
-	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);
-
+	connect(this, &worker_node::established_client_connection, this, &worker_node::start_thread);	
+	connect(this, &worker_node::disconnect_client, m_p_tcp_thread, &tcp_thread::disconnect_client);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_account,
+			this, &worker_node::request_create_account,
+			Qt::DirectConnection);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
@@ -49,22 +53,19 @@ bool worker_node::init()
 void worker_node::run()
 {
 	std::cout<<"Worker Thread started"<<std::endl;
-
 	/* initialize the state machine with a connect to master */
 	state = connection_state::CONNECT_TO_MASTER;
 
 	QTcpSocket * pSocket = NULL;
 	QString read, our_tcp_server, port_string;
-   
+	bool served;
+	
 	for (; m_continue; m_p_thread->msleep(sleep_time)) {
 		if (state == connection_state::CONNECT_TO_MASTER) goto connect_to_master;
 		else if (state == connection_state::WAIT_FOR_JOB) goto wait_for_job;
-		else if (state == connection_state::WAIT_FOR_CLIENT_CONNECT) goto connect_client;
-		else if (state == connection_state::PROCESS_JOB) goto process_job;
-		else if (state == connection_state::DISCONNECT_CLIENT) goto disconnect_client;
-		else goto disconnect_client;
-	  
+		else if (state == connection_state::WAIT_FOR_CLIENT_CONNECT) goto wait_for_client;
 	connect_to_master:
+		served_client = false;
 		std::cout<<"state: CONNECT_TO_MASTER"<<std::endl;
 		if (pSocket != NULL) delete pSocket;
 		pSocket = new QTcpSocket();
@@ -109,19 +110,18 @@ void worker_node::run()
 			pSocket->disconnectFromHost();
 			delete pSocket;
 			pSocket = NULL;
-			goto connect_client;
+		} m_p_mutex->lock();
+		served_client = false;
+		m_p_mutex->unlock();
+	wait_for_client:
+		for (;;m_p_thread->msleep(sleep_time >> 4)) {
+			m_p_mutex->lock();
+			served = served_client;
+			m_p_mutex->unlock();
+			if (served) goto end;
 		}
-		/* now disconnect from the master */
-		/* disconnect_master: */
-		/* @todo */
-	connect_client:
-		goto end;
-	process_job:
-		/* @todo */
-	disconnect_client:
-		/* @todo */
-
 	end:
+		state = connection_state::CONNECT_TO_MASTER;
 		continue; /* go around again */
 	}
 }
@@ -226,8 +226,8 @@ bool worker_node::username_exists(const QString & _user)
 		 * @todo again, probably should not return false.
 		 */
 		return true;
-	} else if (query->size()) return true;
-	return false;
+	} else if (query->size()) return delete query, true;
+	return delete query, false;
 }
 
 bool worker_node::select_schedule_id(user & u)
@@ -249,14 +249,14 @@ bool worker_node::select_schedule_id(user & u)
 		std::string str = schedule_select.toStdString(); delete query;
 		throw std::invalid_argument(str);
 		return false;
-	} else if (!query->size()) return false;
+	} else if (!query->size()) return delete query, false;
 
 	/* now extract the schedule id and set in our referenced object */
 	register int sched_id_col = query->record().indexOf("schedule_id");
 	query->next();
 	if (sched_id_col != -1) u.set_schedule_id(query->value(sched_id_col).toString());
 	else throw std::invalid_argument("No schedule_id column returned");
-	return true;
+	return delete query, true;
 }
 
 bool worker_node::select_user(user & u) {
@@ -380,4 +380,60 @@ bool worker_node::cleanup_db_insert()
 		return false;
 	} delete query;
 	return true;
+}
+
+void worker_node::request_create_account(QString * _p_text,
+										 QTcpSocket * _p_socket)
+{
+	std::cout<<"create account request: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+	
+	/* split along ':' characters */
+	QStringList separated = _p_text->split(":");
+	
+	if (separated.size() < 3) {
+		/* if there are not enough params, disconnect. */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	QString _mail = separated[2];
+	QString _cell = (separated.size() > 3) ? separated[3] : "";
+
+	if (username_exists(_user)) {
+		/* the user exists. Invalid request. */
+		QString * msg = new QString("ERROR: EXISTING USER\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();		
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+	QString * msg;
+	/* try to insert the user */
+	try {
+		
+		if (!try_create(_user, _pass, _mail)) {
+			msg = new QString("ERROR: DB INSERT FAILED\r\n");
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB INSERT FAILED\r\n");
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
 }
