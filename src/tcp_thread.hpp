@@ -18,72 +18,73 @@ class worker_node;
 
 class tcp_thread : public QObject
 {
-   Q_OBJECT
+	Q_OBJECT
 public:
-   explicit tcp_thread(const QString & _hostname, const quint16 & _port, const bool & _master_mode = true, QObject * parent = NULL);
-   ~tcp_thread() { /** @todo This function is important, I suppose... **/ }
+	explicit tcp_thread(const QString & _hostname, const quint16 & _port, const bool & _master_mode = true, QObject * parent = NULL);
+	~tcp_thread() { /** @todo This function is important, I suppose... **/ }
 
-   bool init();
-   bool writeData(QByteArray data, tcp_connection * receiver);
+	bool init();
+	bool writeData(QByteArray data, tcp_connection * receiver);
    
-   Q_SLOT void disconnected();
-   Q_SLOT void readFromClient();
-   Q_SLOT void sendMessage(QString, tcp_connection * request);
-   Q_SLOT void acceptConnection();
-   Q_SLOT void stop(){ m_continue = false; }
-   Q_SLOT void send_pair_info(tcp_connection * request);
-   Q_SLOT void disconnect_client(tcp_connection *, QString *);
-   Q_SIGNAL void readIt(QTcpSocket*);
-   Q_SIGNAL void receivedMessage();
+	Q_SLOT void disconnected();
+	Q_SLOT void readFromClient();
+	Q_SLOT void sendMessage(QString, tcp_connection * request);
+	Q_SLOT void acceptConnection();
+	Q_SLOT void stop(){ m_continue = false; }
+	Q_SLOT void send_pair_info(tcp_connection * request);
+	Q_SLOT void disconnect_client(tcp_connection *, QString *);
+	Q_SIGNAL void readIt(QTcpSocket*);
+	Q_SIGNAL void receivedMessage();
 
-   Q_SIGNAL void got_create_account(QString *, QTcpSocket *);
-   Q_SIGNAL void worker_connected(worker_connection * _worker);
-   Q_SIGNAL void client_connected(client_connection * _client);
+	Q_SIGNAL void got_create_account(QString *, QTcpSocket *);
+	Q_SIGNAL void got_login_request(QString *, QTcpSocket *);
+	Q_SIGNAL void worker_connected(worker_connection * _worker);
+	Q_SIGNAL void client_connected(client_connection * _client);
    
-   Q_SLOT void echoReceived(QString);
+	Q_SLOT void echoReceived(QString);
 
-   int queueDepth() {
-	  QMutex * pMutex = new QMutex();
-	  pMutex->lock();
-	  int queueSize = m_pTcpMessages->size();
-	  int size = 0;
-	  if (!queueSize) {
-		 pMutex->unlock();
-		 delete pMutex;
-		 return queueSize;
-	  }
+	int queueDepth() {
+		QMutex * pMutex = new QMutex();
+		pMutex->lock();
+		int queueSize = m_pTcpMessages->size();
+		int size = 0;
+		if (!queueSize) {
+			pMutex->unlock();
+			delete pMutex;
+			return queueSize;
+		}
 
-	  else {
-		 for (int x = 0; x < queueSize; ++x) {
-			++size;
-		 }
-	  }
-	  pMutex->unlock();
-	  delete pMutex;
-	  return size;
-   }
+		else {
+			for (int x = 0; x < queueSize; ++x) {
+				++size;
+			}
+		}
+		pMutex->unlock();
+		delete pMutex;
+		return size;
+	}
 
-   void set_master(master_node * _p_master_node) { m_p_master_node = _p_master_node; }
-   void set_worker(worker_node * _p_worker_node) { m_p_worker_node = _p_worker_node; }
+	void set_master(master_node * _p_master_node) { m_p_master_node = _p_master_node; }
+	void set_worker(worker_node * _p_worker_node) { m_p_worker_node = _p_worker_node; }
 
-   const master_node * get_master() { return m_p_master_node; }
-   const worker_node * get_worker() { return m_p_worker_node; }
+	const master_node * get_master() { return m_p_master_node; }
+	const worker_node * get_worker() { return m_p_worker_node; }
    
-   const QTcpServer * getServer() { return m_pServer; }
+	const QTcpServer * getServer() { return m_pServer; }
 private:
-   QTcpServer * m_pServer;
+	QTcpServer * m_pServer;
 
-   volatile bool m_continue = true;
-   volatile bool m_master_mode = false;
+	volatile bool m_continue = true;
+	volatile bool m_master_mode = false;
    
-   QString m_hostname;
-   quint16 m_port;
-   quint16 m_blockSize;
+	QString m_hostname;
+	quint16 m_port;
+	quint16 m_blockSize;
 
-   master_node * m_p_master_node;
-   worker_node * m_p_worker_node;
+	master_node * m_p_master_node;
+	worker_node * m_p_worker_node;
 
-   QQueue<tcp_connection> * m_pTcpMessages;
-   QList<tcp_connection*> m_tcp_connections;
+	QQueue<tcp_connection> * m_pTcpMessages;
+	QList<tcp_connection*> m_tcp_connections;
 };
 #endif
