@@ -48,7 +48,10 @@ bool tcp_thread::writeData(QByteArray data, tcp_connection * receiver)
 void tcp_thread::disconnected()
 {
 	QTcpSocket * quitter = qobject_cast<QTcpSocket *>(sender());
-
+	/* convert to tcp_connection */
+	QString _host = quitter->peerName();
+	tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
+	Q_EMIT(dropped_connection(to_dequeue));
 	std::cout<< "Client "<< QHostAddress(quitter->peerAddress().toIPv4Address()).toString().toStdString();
 	std::cout<<":" << quitter->peerPort();
 	std::cout<< " has left the server." << std::endl;
