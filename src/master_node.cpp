@@ -66,6 +66,9 @@ bool master_node::init()
 
    connect(this, &master_node::send_info,
 		   m_p_tcp_thread, &tcp_thread::send_pair_info);
+   connect(m_p_tcp_thread, &tcp_thread::dropped_connection,
+		   this, &master_node::handle_disconnect,
+		   Qt::DirectConnection);
    return m_p_thread->isRunning();
 }
 
@@ -183,4 +186,40 @@ void master_node::run()
 	  Q_EMIT(send_info(w));
 	  Q_EMIT(send_info(c));
    }
+}
+
+void master_node::handle_disconnect(tcp_connection * _dropped)
+{
+	QString dropped_host = _dropped->get_hostname();
+	/* lock both mutexes, as we could have either */
+	m_p_worker_mutex->lock();
+	m_p_client_mutex->lock();
+	
+	/* find a worker */	
+	for (const auto & x : m_worker_connections) {
+		if (*_dropped == *x) {
+			/* found the worker */
+			std::cout<<"worker dropped"<<std::endl;
+			m_worker_connections.removeAt(m_worker_connections.indexOf(x));
+			m_p_worker_mutex->unlock();
+			m_p_client_mutex->unlock();
+			delete _dropped; return;
+		}
+	}
+	
+	for (const auto & x : m_client_connections) {
+		if (*_dropped == *x) {
+			/* found the client */
+			std::cout<<"client dropped"<<std::endl;
+			m_client_connections.removeAt(m_client_connections.indexOf(x));
+			m_p_worker_mutex->unlock();
+			m_p_client_mutex->unlock();
+			delete _dropped; return;
+		}
+	}
+
+	std::cerr<<"warning: could not find dropped connection"<<std::endl;
+	m_p_worker_mutex->unlock();
+	m_p_client_mutex->unlock();
+	delete _dropped;
 }

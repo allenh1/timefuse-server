@@ -40,7 +40,8 @@ public:
 	Q_SIGNAL void got_login_request(QString *, QTcpSocket *);
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);
-   
+	Q_SIGNAL void dropped_connection(tcp_connection *);
+	
 	Q_SLOT void echoReceived(QString);
 
 	int queueDepth() {
