@@ -473,6 +473,7 @@ void worker_node::request_login(QString * _p_text, QTcpSocket * _p_socket)
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
 			return;
 		} else msg = new QString("OK\r\n");
 	} catch ( ... ) {
