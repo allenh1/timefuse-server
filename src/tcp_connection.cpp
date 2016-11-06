@@ -27,6 +27,7 @@ tcp_connection::~tcp_connection()
    /**
 	* @todo "Is this all I have to do?"
 	*/
+	delete m_p_socket;
 }
 
 /** 
