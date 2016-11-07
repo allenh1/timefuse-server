@@ -49,6 +49,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_login_request,
 			this, &worker_node::request_login,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_group,
+			this, &worker_node::request_create_group,
+			Qt::DirectConnection);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
@@ -542,6 +545,60 @@ void worker_node::request_login(QString * _p_text, QTcpSocket * _p_socket)
 		} else msg = new QString("OK\r\n");
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_create_group(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request create group: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() < 3) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	QString  _grp = separated[2];
+
+	QString * msg;
+
+	try {
+		if (!try_login(_user, _pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!insert_group(_grp)) {
+			msg = new QString("ERROR: EXISTING GROUP\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
 	} Q_EMIT(disconnect_client(p, msg));
 	m_p_mutex->lock();
 	served_client = true;

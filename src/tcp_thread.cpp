@@ -50,8 +50,10 @@ void tcp_thread::disconnected()
 	QTcpSocket * quitter = qobject_cast<QTcpSocket *>(sender());
 	/* convert to tcp_connection */
 	QString _host = quitter->peerName();
-	tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
-	Q_EMIT(dropped_connection(to_dequeue));
+	if (m_master_mode) {
+		tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
+		Q_EMIT(dropped_connection(to_dequeue));
+	}
 	std::cout<< "Client "<< QHostAddress(quitter->peerAddress().toIPv4Address()).toString().toStdString();
 	std::cout<<":" << quitter->peerPort();
 	std::cout<< " has left the server." << std::endl;
@@ -131,8 +133,12 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_LOGIN ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_login_request(temp, pClientSocket));
-		} else {
-			std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;}
+		} else if (text.contains("CREATE_GROUP")) {
+			std::cout<<"create group received"<<std::endl;
+			text.replace("CREATE_GROUP ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_create_group(temp, pClientSocket));
+		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;		
 	}
 }
 

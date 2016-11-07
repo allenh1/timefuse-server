@@ -67,6 +67,8 @@ public:
 									   QTcpSocket * _p_socket);
 	Q_SLOT void request_login(QString * _p_text,
 							  QTcpSocket * _p_socket);
+	Q_SLOT void request_create_group(QString * _p_text,
+									 QTcpSocket * _p_socket);	
 private:
 	volatile bool m_continue = true;
    
