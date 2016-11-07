@@ -49,6 +49,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_login_request,
 			this, &worker_node::request_login,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_group,
+			this, &worker_node::request_create_group,
+			Qt::DirectConnection);
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
@@ -158,6 +161,37 @@ QSqlDatabase worker_node::setup_db() {
 	db.setUserName(user); db.setPassword(pwd);
 	db.setPort(port);
 	return db;
+}
+
+/**
+ * @brief Insert a group into the database.
+ *
+ * @param group_name Name of the group to create.
+ * @return True if the insertion succeeded.
+ */
+bool worker_node::insert_group(const QString & group_name) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!group_name.size()) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("CALL AddGroup(?, @success)");
+	query.bindValue(0, group_name);	
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} else if (!query.exec("SELECT @success")) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query.next();
+
+	return query.value(0).toBool();
 }
 
 /**
@@ -385,6 +419,39 @@ bool worker_node::cleanup_db_insert()
 	return true;
 }
 
+bool worker_node::cleanup_group_insert()
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	}
+	/* now we remove the inserted */
+	QString delete_group = "DELETE FROM groups WHERE group_name = 'billy group';";	
+	QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy group';";
+	QSqlQuery * query = new QSqlQuery(m_db);
+	query->prepare(delete_group);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deleting the schedule");
+		return false;
+	} delete query;
+
+	query = new QSqlQuery(m_db);
+	query->prepare(delete_schedule_item);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deletion of a user.");
+		return false;
+	} delete query;
+	return true;
+}
+
 void worker_node::request_create_account(QString * _p_text,
 										 QTcpSocket * _p_socket)
 {
@@ -478,6 +545,60 @@ void worker_node::request_login(QString * _p_text, QTcpSocket * _p_socket)
 		} else msg = new QString("OK\r\n");
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_create_group(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request create group: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() < 3) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	QString  _grp = separated[2];
+
+	QString * msg;
+
+	try {
+		if (!try_login(_user, _pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!insert_group(_grp)) {
+			msg = new QString("ERROR: EXISTING GROUP\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
 	} Q_EMIT(disconnect_client(p, msg));
 	m_p_mutex->lock();
 	served_client = true;

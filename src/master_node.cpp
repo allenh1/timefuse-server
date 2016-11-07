@@ -208,7 +208,7 @@ void master_node::handle_disconnect(tcp_connection * _dropped)
 	}
 	
 	for (const auto & x : m_client_connections) {
-		if (*_dropped == *x) {
+		if (*_dropped == *((tcp_connection *)x)) {
 			/* found the client */
 			std::cout<<"client dropped"<<std::endl;
 			m_client_connections.removeAt(m_client_connections.indexOf(x));
