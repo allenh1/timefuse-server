@@ -161,6 +161,51 @@ QSqlDatabase worker_node::setup_db() {
 }
 
 /**
+ * @brief Insert a group into the database.
+ *
+ * @param group_name Name of the group to create.
+ * @return True if the insertion succeeded.
+ */
+bool worker_node::insert_group(const QString & group_name) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!group_name.size()) return false;
+
+	QSqlQuery * query = new QSqlQuery(m_db); 
+	QString group_query_string = "CALL AddGroup(";
+	QString verify_string = "SELECT @success;";
+
+	group_query_string += "'" + group_name + "', @success);";
+
+	query->prepare(group_query_string);
+	if(!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} delete query;
+
+	query = new QSqlQuery(m_db);
+	query->prepare(verify_string);
+	if(!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		std::string str = "Something failed in query verification: "
+			+ query->lastQuery().toStdString();
+		delete query;
+		throw std::invalid_argument(str);
+		return false;
+	} delete query;
+
+	register int col = query->record().indexOf("@success");
+	query->next();
+	if (col != -1) return query->value(col).toInt() == 1;
+	return false;
+}
+
+/**
  * @brief insert a user to the database.
  *
  * @param u User to insert
@@ -363,6 +408,39 @@ bool worker_node::cleanup_db_insert()
 	QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy'";
 	QSqlQuery * query = new QSqlQuery(m_db);
 	query->prepare(delete_user);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deleting the schedule");
+		return false;
+	} delete query;
+
+	query = new QSqlQuery(m_db);
+	query->prepare(delete_schedule_item);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deletion of a user.");
+		return false;
+	} delete query;
+	return true;
+}
+
+bool worker_node::cleanup_group_insert()
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	}
+	/* now we remove the inserted */
+	QString delete_group = "DELETE FROM groups WHERE group_name = 'billy group';";	
+	QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy group';";
+	QSqlQuery * query = new QSqlQuery(m_db);
+	query->prepare(delete_group);
 
 	if (!query->exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
