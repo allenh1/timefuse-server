@@ -172,37 +172,23 @@ bool worker_node::insert_group(const QString & group_name) {
 		return false;
 	} else if (!group_name.size()) return false;
 
-	QSqlQuery * query = new QSqlQuery(m_db); 
-	QString group_query_string = "CALL AddGroup(";
-	QString verify_string = "SELECT @success;";
-
-	group_query_string += "'" + group_name + "', @success);";
-
-	query->prepare(group_query_string);
-	if(!query->exec()) {
+	QSqlQuery query(m_db); 
+	query.prepare("CALL AddGroup(?, @success)");
+	query.bindValue(0, group_name);	
+	
+	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
-		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
-		delete query;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
 		throw std::invalid_argument("something failed during procedure call");
 		return false;
-	} delete query;
-
-	query = new QSqlQuery(m_db);
-	query->prepare(verify_string);
-	if(!query->exec()) {
+	} else if (!query.exec("SELECT @success")) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
-		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
-		std::string str = "Something failed in query verification: "
-			+ query->lastQuery().toStdString();
-		delete query;
-		throw std::invalid_argument(str);
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
 		return false;
-	} delete query;
+	} query.next();
 
-	register int col = query->record().indexOf("@success");
-	query->next();
-	if (col != -1) return query->value(col).toInt() == 1;
-	return false;
+	return query.value(0).toBool();
 }
 
 /**
