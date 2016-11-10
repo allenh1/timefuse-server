@@ -1,5 +1,5 @@
 DELIMITER $$
-DROP PROCEDURE IF EXISTS AddUserToGroup;
+DROP PROCEDURE IF EXISTS AddUserToGroup$$
 
 CREATE PROCEDURE AddUserToGroup(
  IN groupName VARCHAR(100),
@@ -25,3 +25,4 @@ BEGIN
   SET success = 1;
  END IF;
 END$$
+DELIMITER ;
