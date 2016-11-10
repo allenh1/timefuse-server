@@ -55,7 +55,8 @@ public:
 	Q_SLOT bool update_user(const QString & _old_user, const QString & _old_pass,
 							const QString & _new_pass, const QString & _new_user,
 							const QString & _new_mail, const QString & _new_cell);
-
+	Q_SLOT bool list_groups(const QString &, QString *);
+	
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
 	bool cleanup_group_insert();
@@ -82,6 +83,8 @@ public:
 	Q_SLOT void request_leave_group(QString * _p_text,
 									QTcpSocket * _p_socket);
 	Q_SLOT void request_update_user(QString * _p_text,
+									QTcpSocket * _p_socket);
+	Q_SLOT void request_user_groups(QString * _p_text,
 									QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;

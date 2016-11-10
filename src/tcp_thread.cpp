@@ -153,6 +153,11 @@ void tcp_thread::readFromClient()
 			text.replace("UPDATE_ACCOUNT ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_update_user(temp, pClientSocket));
+		} else if (text.contains("REQUEST_GROUPS")) {
+			std::cout<<"update user received"<<std::endl;
+			text.replace("REQUEST_GROUPS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_request_groups(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;		
 	}
 }
