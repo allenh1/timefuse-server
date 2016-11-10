@@ -158,7 +158,12 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_GROUPS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_request_groups(temp, pClientSocket));
-		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;		
+		} else if (text.contains("REQUEST_ACCOUNT")) {
+			std::cout<<"update user received"<<std::endl;
+			text.replace("REQUEST_ACCOUNT ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_request_account(temp, pClientSocket));
+		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
 

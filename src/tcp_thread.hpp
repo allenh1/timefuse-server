@@ -43,6 +43,7 @@ public:
 	Q_SIGNAL void got_leave_group(QString *, QTcpSocket *);
 	Q_SIGNAL void got_update_user(QString *, QTcpSocket *);
 	Q_SIGNAL void got_request_groups(QString *, QTcpSocket *);
+	Q_SIGNAL void got_request_account(QString *, QTcpSocket *);
 
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);

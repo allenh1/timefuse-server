@@ -56,6 +56,7 @@ public:
 							const QString & _new_pass, const QString & _new_user,
 							const QString & _new_mail, const QString & _new_cell);
 	Q_SLOT bool list_groups(const QString &, QString *);
+	Q_SLOT bool get_account_info(const QString &, QString *);
 	
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
@@ -86,6 +87,8 @@ public:
 									QTcpSocket * _p_socket);
 	Q_SLOT void request_user_groups(QString * _p_text,
 									QTcpSocket * _p_socket);
+	Q_SLOT void request_account_info(QString * _p_text,
+									 QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
