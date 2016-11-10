@@ -12,7 +12,8 @@ BEGIN
  -- Find the user id
  SELECT user_id AS count INTO uid FROM users WHERE user_name = userName;
  -- check that the user isn't in the group already
- SELECT count(user_id) AS count INTO X FROM user_group_relation WHERE user_id = uid;
+ SELECT count(user_id) AS count INTO X FROM user_group_relation
+   WHERE user_id = uid AND group_id = gid;
  -- Check they are nonzero
  IF gid = 0 or uid = 0 THEN
   SET success = 0;
