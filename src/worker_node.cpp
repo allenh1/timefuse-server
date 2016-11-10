@@ -714,7 +714,7 @@ void worker_node::request_add_to_group(QString * _p_text, QTcpSocket * _p_socket
 	/* split along ':' characters */
 	QStringList separated= _p_text->split(":");
 
-	if (separated.size() < 3) {
+	if (separated.size() < 4) {
 		/* invalid params => disconnect */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
@@ -727,6 +727,7 @@ void worker_node::request_add_to_group(QString * _p_text, QTcpSocket * _p_socket
 	QString _user = separated[0];
 	QString _pass = separated[1];
 	QString  _grp = separated[2];
+	QString _usr2 = separated[3];
 
 	QString * msg;
 
@@ -740,7 +741,7 @@ void worker_node::request_add_to_group(QString * _p_text, QTcpSocket * _p_socket
 			served_client = true;
 			m_p_mutex->unlock();
 			return;
-		} else if (!join_group(_user, _grp)) {
+		} else if (!join_group(_usr2, _grp)) {
 			msg = new QString("ERROR: GROUP DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
