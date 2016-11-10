@@ -72,7 +72,10 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_delete_group,
 			this, &worker_node::request_delete_group,
 			Qt::DirectConnection);
-	/* start the thread */
+	connect(m_p_tcp_thread, &tcp_thread::got_list_group_users,
+			this, &worker_node::request_group_users,
+			Qt::DirectConnection);
+    /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
 }
@@ -337,6 +340,41 @@ bool worker_node::list_groups(const QString & user_name, QString * _msg) {
 		throw std::invalid_argument("failed to query the user's groups");
 		return false;
 	} else if (!query.size()) {
+		*_msg += "\n";
+		return true;
+	}
+
+	for (; query.next();) *_msg += query.value(0).toString() + "\n";
+	return true;
+}
+
+/**
+ * @brief Get the users in a group.
+ *
+ * @param group Group name.
+ * @return True if the list was retrieved
+ */
+bool worker_node::list_group_users(const QString & group_name, QString * _msg) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!group_name.size()) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("SELECT users.user_name FROM groups, users,"
+				  " user_group_relation WHERE groups.group_name = ? "
+				  "AND user_group_relation.user_id = users.user_id "
+				  "AND user_group_relation.group_id = groups.group_id");
+	query.bindValue(0, group_name);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} else if (!query.size()) {
+		std::cerr<<"WARNING: query \""<<query.lastQuery().toStdString()<<"\""<<std::endl;
+		std::cerr<<"         was empty!"<<std::endl;
 		*_msg += "\n";
 		return true;
 	}
@@ -1100,7 +1138,7 @@ void worker_node::request_update_user(QString * _p_text, QTcpSocket * _p_socket)
 
 void worker_node::request_user_groups(QString * _p_text, QTcpSocket * _p_socket)
 {
-	std::cout<<"request groups: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	std::cout<<"request group users: \""<<_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
 	QString client_host = _p_socket->peerName();
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
@@ -1188,6 +1226,60 @@ void worker_node::request_account_info(QString * _p_text, QTcpSocket * _p_socket
 			return;
 		} else if (!get_account_info(user, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH ACCOUNT INFO\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_group_users(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request group users: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() != 3) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user  = separated[0];
+	QString pass  = separated[1];
+	QString group = separated[2];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!list_group_users(group, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO FETCH GROUP USERS\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
