@@ -138,6 +138,11 @@ void tcp_thread::readFromClient()
 			text.replace("CREATE_GROUP ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_create_group(temp, pClientSocket));
+		} else if (text.contains("JOIN_GROUP")) {
+			std::cout<<"join group received"<<std::endl;
+			text.replace("JOIN_GROUP ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_join_group(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;		
 	}
 }

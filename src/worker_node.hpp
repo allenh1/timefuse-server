@@ -48,6 +48,8 @@ public:
 	Q_SLOT bool select_user(user & u);
 	Q_SLOT bool select_schedule_id(user & u);
 	Q_SLOT bool insert_group(const QString & group_name);
+	Q_SLOT bool join_group(const QString & user_name,
+						   const QString & group_name);
 	
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
@@ -68,7 +70,9 @@ public:
 	Q_SLOT void request_login(QString * _p_text,
 							  QTcpSocket * _p_socket);
 	Q_SLOT void request_create_group(QString * _p_text,
-									 QTcpSocket * _p_socket);	
+									 QTcpSocket * _p_socket);
+	Q_SLOT void request_add_to_group(QString * _p_text,
+									 QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
