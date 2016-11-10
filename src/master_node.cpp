@@ -135,14 +135,17 @@ void master_node::run()
    for (; m_continue; m_p_thread->msleep(sleep_time)) {
 	  /* lock client mutex */
 	  m_p_client_mutex->lock();
+	  /* lock worker mutex */
+	  m_p_worker_mutex->lock();
 	  
 	  /* check that our queue is non-empty */
-	  if (!m_client_connections.size()) {
-		 /* unlock mutex and continue */
+	  if (!(m_client_connections.size() && m_worker_connections.size())) {
+		 /* unlock mutexes and continue */
 		 m_p_client_mutex->unlock();
+		 m_p_worker_mutex->unlock();
 		 continue;
-	  }
-
+	  } m_p_worker_mutex->unlock(); /* unlock the worker mutex */ 
+	  
 	  /* now try to acquire a client */
 	  m_p_client_sema->acquire();
 	  /* dequeue the client */
@@ -152,23 +155,6 @@ void master_node::run()
 
 	  /* lock worker mutex */
 	  m_p_worker_mutex->lock();
-
-	  /* check that the worker queue is non-empty */
-	  if (!m_worker_connections.size()) {
-		 /* add the client back and continue */
-		 handle_client_connect(c);
-		 /* unlock worker mutex */
-		 m_p_worker_mutex->unlock();
-		 /* lock the client mutex */
-		 m_p_client_mutex->lock();
-		 /* release resources in the semaphore */
-		 m_p_client_sema->release();
-		 /* enqueue the client */
-		 m_client_connections.enqueue(c);
-		 /* unlock the mutex */
-		 m_p_client_mutex->unlock();
- 		 continue;
-	  }
 
 	  /* try to acquire a worker */
 	  m_p_worker_sema->acquire();
