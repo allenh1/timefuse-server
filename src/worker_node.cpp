@@ -66,6 +66,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_request_groups,
 			this, &worker_node::request_user_groups,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_request_account,
+			this, &worker_node::request_account_info,
+			Qt::DirectConnection);
 	/* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -305,6 +308,36 @@ bool worker_node::list_groups(const QString & user_name, QString * _msg) {
 	}
 
 	for (; query.next();) *_msg += query.value(0).toString() + "\n";
+	return true;
+}
+
+/**
+ * @brief Get a user's account info.
+ *
+ * @param user User name
+ * @return True if the list was retrieved
+ */
+bool worker_node::get_account_info(const QString & user_name, QString * _msg) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!user_name.size()) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("SELECT email, cellphone FROM users WHERE user_name = ?");
+	query.bindValue(0, user_name);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} else if (!query.size()) {
+		*_msg += "\n";
+		return true;
+	} query.next();
+
+	*_msg += query.value(0).toString() + ":" + query.value(1).toString() + "\r\n";
 	return true;
 }
 
@@ -1014,6 +1047,59 @@ void worker_node::request_user_groups(QString * _p_text, QTcpSocket * _p_socket)
 			return;
 		} else if (!list_groups(user, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH GROUP LIST\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_account_info(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request account info: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() != 2) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user = separated[0];
+	QString pass = separated[1];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!get_account_info(user, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO FETCH ACCOUNT INFO\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
