@@ -270,6 +270,36 @@ bool worker_node::join_group(const QString & user_name, const QString & group_na
 }
 
 /**
+ * @brief Update the user with this shit ton of parameters.
+ *
+ * @return True if the insertion succeeded.
+ */
+bool worker_node::update_user(const QString & _old_user, const QString & _old_pass,
+							  const QString & _new_pass, const QString & _new_user,
+							  const QString & _new_mail, const QString & _new_cell)
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!(_old_user.size() && _old_pass.size() && _new_pass.size()
+				 && _new_user.size() && _new_mail.size())) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("UPDATE users SET user_name = ?, passwd = ?,"
+				  "email = ?, cellphone = ? WHERE user_name = ? AND passwd = ?");
+	query.bindValue(0, _new_user); query.bindValue(1, _new_pass);
+	query.bindValue(2, _new_mail); query.bindValue(3, _new_cell);
+	query.bindValue(4, _old_user); query.bindValue(5, _old_pass);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} return true;
+}
+
+/**
  * @brief insert a user to the database.
  *
  * @param u User to insert
@@ -833,6 +863,65 @@ void worker_node::request_leave_group(QString * _p_text, QTcpSocket * _p_socket)
 			return;
 		} else if (!leave_group(_usr2, _grp)) {
 			msg = new QString("ERROR: GROUP DOES NOT EXIST\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_update_user(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request update user: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() < 5) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	} bool has_phone = separated.size() == 6;
+
+	QString _old_user = separated[0];
+	QString _old_pass = separated[1];
+	QString _new_pass = separated[2];
+	QString _new_user = separated[3];
+	QString _new_mail = separated[4];
+	QString _new_cell = (has_phone) ? separated[5] : "";
+
+	QString * msg;
+
+	try {
+		if (!try_login(_old_user, _old_pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!update_user(_old_user, _old_pass,
+								_new_pass, _new_user,
+								_new_mail, _new_cell)) {
+			msg = new QString("ERROR: FAILED TO UPDATE USER\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
