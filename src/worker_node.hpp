@@ -52,6 +52,7 @@ public:
 						   const QString & group_name);
 	Q_SLOT bool leave_group(const QString & user_name,
 							const QString & group_name);
+	Q_SLOT bool remove_group(const QString & group_name);
 	Q_SLOT bool update_user(const QString & _old_user, const QString & _old_pass,
 							const QString & _new_pass, const QString & _new_user,
 							const QString & _new_mail, const QString & _new_cell);
@@ -88,6 +89,8 @@ public:
 	Q_SLOT void request_user_groups(QString * _p_text,
 									QTcpSocket * _p_socket);
 	Q_SLOT void request_account_info(QString * _p_text,
+									 QTcpSocket * _p_socket);
+	Q_SLOT void request_delete_group(QString * _p_text,
 									 QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
