@@ -11,7 +11,7 @@ BEGIN
  SELECT group_id AS count INTO gid FROM groups WHERE group_name = groupName;
  -- Find the user id
  SELECT user_id AS count INTO uid FROM users WHERE user_name = userName;
- -- check that the user isn't in the group already
+ -- check that the user is in the group
  SELECT count(user_id) AS count INTO X FROM user_group_relation
    WHERE user_id = uid AND group_id = gid;
  -- Check they are nonzero
