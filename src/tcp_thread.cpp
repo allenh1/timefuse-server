@@ -168,6 +168,11 @@ void tcp_thread::readFromClient()
 			text.replace("DELETE_GROUP ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_delete_group(temp, pClientSocket));
+		} else if (text.contains("REQUEST_USERS")) {
+			std::cout<<"request group users received"<<std::endl;
+			text.replace("REQUEST_USERS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_list_group_users(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
