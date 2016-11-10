@@ -50,7 +50,9 @@ public:
 	Q_SLOT bool insert_group(const QString & group_name);
 	Q_SLOT bool join_group(const QString & user_name,
 						   const QString & group_name);
-	
+	Q_SLOT bool leave_group(const QString & user_name,
+							const QString & group_name);
+							
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
 	bool cleanup_group_insert();
@@ -74,6 +76,8 @@ public:
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_add_to_group(QString * _p_text,
 									 QTcpSocket * _p_socket);
+	Q_SLOT void request_leave_group(QString * _p_text,
+									QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    

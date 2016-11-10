@@ -143,6 +143,11 @@ void tcp_thread::readFromClient()
 			text.replace("JOIN_GROUP ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_join_group(temp, pClientSocket));
+		} else if (text.contains("LEAVE_GROUP")) {
+			std::cout<<"leave group received"<<std::endl;
+			text.replace("LEAVE_GROUP ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_leave_group(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;		
 	}
 }
