@@ -149,7 +149,7 @@ void tcp_thread::readFromClient()
 			QString * temp = new QString(text);
 			Q_EMIT(got_leave_group(temp, pClientSocket));
 		} else if (text.contains("UPDATE_ACCOUNT")) {
-			std::cout<<"leave group received"<<std::endl;
+			std::cout<<"update user received"<<std::endl;
 			text.replace("UPDATE_ACCOUNT ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_update_user(temp, pClientSocket));

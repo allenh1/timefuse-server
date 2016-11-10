@@ -60,6 +60,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_leave_group,
 			this, &worker_node::request_leave_group,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_update_user,
+			this, &worker_node::request_update_user,
+			Qt::DirectConnection);
 	/* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
