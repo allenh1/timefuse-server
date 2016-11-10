@@ -465,9 +465,67 @@ bool worker_node::cleanup_group_insert()
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
 	}
+
 	/* now we remove the inserted */
 	QString delete_group = "DELETE FROM groups WHERE group_name = 'billy group';";	
 	QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy group';";
+	/* @todo remove from group */
+	/* QString delete_relation = "CALL RemoveFromGroup(?, ?, @success) */
+	QSqlQuery * query = new QSqlQuery(m_db);
+	query->prepare(delete_group);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deleting the schedule");
+		return false;
+	} delete query;
+
+	query = new QSqlQuery(m_db);
+	query->prepare(delete_schedule_item);
+
+	if (!query->exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query->lastQuery().toStdString()<<"\""<<std::endl;
+		delete query;
+		throw std::invalid_argument("something failed in deletion of a user.");
+		return false;
+	} delete query;
+	return true;
+}
+
+bool worker_node::cleanup_user_group_insert()
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	}
+
+	QSqlQuery query2(m_db); 
+	query2.prepare("CALL RemoveFromGroup(?, ?, @success)");
+	query2.bindValue(0, "billy group");
+	query2.bindValue(1, "billy");
+	
+	if(!query2.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query2.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} else if (!query2.exec("SELECT @success")) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query2.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query2.next();
+
+	if (!query2.value(0).toBool()) return false;
+	
+	/* now we remove the inserted */
+	QString delete_group = "DELETE FROM groups WHERE group_name = 'billy group';";	
+	QString delete_schedule_item = "DELETE FROM schedules WHERE owner = 'billy group';";
+	/* @todo remove from group */
+	/* QString delete_relation = "CALL RemoveFromGroup(?, ?, @success) */
 	QSqlQuery * query = new QSqlQuery(m_db);
 	query->prepare(delete_group);
 

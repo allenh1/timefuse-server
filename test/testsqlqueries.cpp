@@ -14,7 +14,8 @@ private slots:
 	void test_select();
 	void test_login();
 	void test_create();
-	void test_group_create();	
+	void test_group_create();
+	void test_join_group();
 private:
 	worker_node * m_p_worker;
 };
@@ -93,6 +94,24 @@ void test_sql_queries::test_group_create()
 	QVERIFY(!m_p_worker->insert_group("billy group"));
 	/* remove the test group */
 	QVERIFY(m_p_worker->cleanup_group_insert());
+}
+
+void test_sql_queries::test_join_group()
+{
+	/* try and create a group */
+	QVERIFY(m_p_worker->insert_group("billy group"));
+	/* create a user */
+	QVERIFY(m_p_worker->try_create("billy", "password123!", "billy@domain.com"));
+	/* add the user to the group */
+	QVERIFY(m_p_worker->join_group("billy", "billy group"));
+	/* verify it can't happen twice */
+	QVERIFY(!m_p_worker->join_group("billy", "billy group"));
+	/* verify a non-existing user can't join an existing group */
+	QVERIFY(!m_p_worker->join_group("not billy", "billy group"));
+	/* verify a user can't join a non-existing group */
+	QVERIFY(!m_p_worker->join_group("billy", "not billy's group"));
+	/* remove the test group */
+	QVERIFY(m_p_worker->cleanup_user_group_insert());
 }
 QTEST_MAIN(test_sql_queries)
 #include "testsqlqueries.moc"

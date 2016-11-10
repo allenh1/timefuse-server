@@ -54,6 +54,7 @@ public:
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
 	bool cleanup_group_insert();
+	bool cleanup_user_group_insert();
 	
 	void set_master_hostname(const QString & _master_host) {
 		m_master_host = _master_host;
