@@ -76,7 +76,8 @@ bool worker_node::init()
 			this, &worker_node::request_group_users,
 			Qt::DirectConnection);
 	connect(m_p_tcp_thread, &tcp_thread::got_reset_password,
-			this, &worker_node::request_reset_password);
+			this, &worker_node::request_reset_password,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -530,7 +531,7 @@ bool worker_node::reset_password(QString & _p_user,
 				 && _p_new_psswd.size())) return false;
 
 	QSqlQuery query(m_db); 
-	query.prepare("UPDATE users SET passwd = ?,"
+	query.prepare("UPDATE users SET passwd = ? "
 				  "WHERE user_name = ? AND email = ?");
 	query.bindValue(0, _p_new_psswd); query.bindValue(1, _p_user);
 	query.bindValue(2, _p_email); 
