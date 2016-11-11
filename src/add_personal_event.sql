@@ -2,7 +2,7 @@ DELIMITER $$
 DROP PROCEDURE IF EXISTS AddPersonalEvent $$
 
 CREATE PROCEDURE AddPersonalEvent(
- IN userName VARCHAR(100),
+ IN userName VARCHAR(500),
  IN eventDate DATE,
  IN startTime TIME,
  IN eventDuration INT,
