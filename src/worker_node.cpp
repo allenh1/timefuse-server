@@ -1286,7 +1286,7 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split("|");
+	QStringList separated= _p_text->split("\v");
 
 	if (separated.size() != 7) {
 		/* invalid params => disconnect */
@@ -1346,7 +1346,7 @@ void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split("|");
+	QStringList separated= _p_text->split("\v");
 
 	if (separated.size() != 8) {
 		/* invalid params => disconnect */
