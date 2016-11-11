@@ -77,6 +77,7 @@ bool worker_node::init()
 			Qt::DirectConnection);
 	connect(m_p_tcp_thread, &tcp_thread::got_create_user_event,
 			this, &worker_node::request_personal_event,
+			Qt::DirectConnection);
 	connect(m_p_tcp_thread, &tcp_thread::got_reset_password,
 			this, &worker_node::request_reset_password,
 			Qt::DirectConnection);

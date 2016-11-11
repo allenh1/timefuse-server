@@ -100,14 +100,10 @@ public:
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_group_users(QString * _p_text,
 									 QTcpSocket * _p_socket);
-<<<<<<< src/worker_node.hpp
 	Q_SLOT void request_personal_event(QString * _p_text,
 									   QTcpSocket * _p_socket);
-=======
 	Q_SLOT void request_reset_password(QString * _p_text,
 									   QTcpSocket * _p_socket);
-
->>>>>>> src/worker_node.hpp
 private:
 	volatile bool m_continue = true;
    
