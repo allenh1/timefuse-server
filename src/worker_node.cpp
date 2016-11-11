@@ -75,6 +75,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_list_group_users,
 			this, &worker_node::request_group_users,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_user_event,
+			this, &worker_node::request_personal_event,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -354,7 +357,8 @@ bool worker_node::list_groups(const QString & user_name, QString * _msg) {
  * @param group Group name.
  * @return True if the list was retrieved
  */
-bool worker_node::list_group_users(const QString & group_name, QString * _msg) {
+bool worker_node::list_group_users(const QString & group_name, QString * _msg)
+{
 	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
@@ -593,6 +597,42 @@ bool worker_node::select_user(user & u) {
 	} delete query;
 	return true;
 }
+
+bool worker_node::create_personal_event(
+	const QString & user,
+	const QString & date,
+	const QString & start,
+	const QString & duration,
+	const QString & location,
+	const QString & name
+	)
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	}
+
+	QSqlQuery query(m_db); 
+	query.prepare("CALL AddPersonalEvent(?, ?, ?, ?, ?, ?, @success)");
+	
+	query.bindValue(0, user);     query.bindValue(1, date);     query.bindValue(2, start);
+	query.bindValue(3, duration); query.bindValue(4, location); query.bindValue(5, name);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} else if (!query.exec("SELECT @success")) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query.next();
+
+	return query.value(0).toBool();
+}
+
 
 /**
  * @brief Try to create an account.
@@ -1118,6 +1158,66 @@ void worker_node::request_update_user(QString * _p_text, QTcpSocket * _p_socket)
 								_new_pass, _new_user,
 								_new_mail, _new_cell)) {
 			msg = new QString("ERROR: FAILED TO UPDATE USER\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request create personal event: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split("|");
+
+	if (separated.size() != 7) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user     = separated[0];
+	QString pass     = separated[1];
+	QString date     = separated[2];
+	QString start    = separated[3];
+	QString duration = separated[4];
+	QString location = separated[5];
+	QString name     = separated[6];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!create_personal_event(user,     date,
+										  start,    duration,
+										  location, name)) {
+			msg = new QString("ERROR: FAILED TO CREATE EVENT\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();

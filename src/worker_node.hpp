@@ -59,7 +59,10 @@ public:
 	Q_SLOT bool list_groups(const QString &, QString *);
 	Q_SLOT bool get_account_info(const QString &, QString *);
 	Q_SLOT bool list_group_users(const QString &, QString *);
-	
+	Q_SLOT bool create_personal_event(const QString &, const QString &,
+									  const QString &, const QString &,
+									  const QString &, const QString &);
+
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
 	bool cleanup_group_insert();
@@ -94,7 +97,9 @@ public:
 	Q_SLOT void request_delete_group(QString * _p_text,
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_group_users(QString * _p_text,
-									 QTcpSocket * _p_socket);	
+									 QTcpSocket * _p_socket);
+	Q_SLOT void request_personal_event(QString * _p_text,
+									   QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    

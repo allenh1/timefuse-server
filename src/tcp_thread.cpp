@@ -173,6 +173,11 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_USERS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_list_group_users(temp, pClientSocket));
+		} else if (text.contains("CREATE_USER_EVENT")) {
+			std::cout<<"request create user event received"<<std::endl;
+			text.replace("CREATE_USER_EVENT ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_create_user_event(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
