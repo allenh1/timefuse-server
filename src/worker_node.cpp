@@ -78,6 +78,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_create_user_event,
 			this, &worker_node::request_personal_event,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_create_group_event,
+			this, &worker_node::request_group_event,
+			Qt::DirectConnection);
 	connect(m_p_tcp_thread, &tcp_thread::got_reset_password,
 			this, &worker_node::request_reset_password,
 			Qt::DirectConnection);
@@ -660,7 +663,6 @@ bool worker_node::create_personal_event(
 
 	return query.value(0).toBool();
 }
-
 
 /**
  * @brief Try to create an account.
@@ -1297,6 +1299,67 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 			m_p_mutex->unlock();
 			return;
 		} else if (!create_personal_event(user,     date,
+										  start,    duration,
+										  location, name)) {
+			msg = new QString("ERROR: FAILED TO CREATE EVENT\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request create group event: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split("|");
+
+	if (separated.size() != 8) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user     = separated[0];
+	QString pass     = separated[1];
+	QString group    = separated[2];
+	QString date     = separated[3];
+	QString start    = separated[4];
+	QString duration = separated[5];
+	QString location = separated[6];
+	QString name     = separated[7];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!create_personal_event(group,    date,
 										  start,    duration,
 										  location, name)) {
 			msg = new QString("ERROR: FAILED TO CREATE EVENT\r\n");

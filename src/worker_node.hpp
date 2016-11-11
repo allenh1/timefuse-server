@@ -102,6 +102,8 @@ public:
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_personal_event(QString * _p_text,
 									   QTcpSocket * _p_socket);
+	Q_SLOT void request_group_event(QString * _p_text,
+									   QTcpSocket * _p_socket);
 	Q_SLOT void request_reset_password(QString * _p_text,
 									   QTcpSocket * _p_socket);
 private:
