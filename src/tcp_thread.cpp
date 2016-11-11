@@ -133,6 +133,11 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_LOGIN ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_login_request(temp, pClientSocket));
+		} else if (text.contains("CREATE_GROUP_EVENT")) {
+			std::cout<<"request create group event received"<<std::endl;
+			text.replace("CREATE_GROUP_EVENT ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_create_group_event(temp, pClientSocket));
 		} else if (text.contains("CREATE_GROUP")) {
 			std::cout<<"create group received"<<std::endl;
 			text.replace("CREATE_GROUP ", "");
@@ -178,11 +183,6 @@ void tcp_thread::readFromClient()
 			text.replace("CREATE_USER_EVENT ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_create_user_event(temp, pClientSocket));
-		} else if (text.contains("CREATE_GROUP_EVENT")) {
-			std::cout<<"request create group event received"<<std::endl;
-			text.replace("CREATE_GROUP_EVENT ", "");
-			QString * temp = new QString(text);
-			Q_EMIT(got_create_group_event(temp, pClientSocket));
 		} else if (text.contains("REQUEST_RESET")) {
 			std::cout<<"request reset password received"<<std::endl;
 			text.replace("REQUEST_RESET ", "");
