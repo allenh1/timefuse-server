@@ -47,6 +47,7 @@ public:
 	Q_SIGNAL void got_delete_group(QString *, QTcpSocket *);
 	Q_SIGNAL void got_list_group_users(QString *, QTcpSocket *);
 	Q_SIGNAL void got_create_user_event(QString *, QTcpSocket *);
+	Q_SIGNAL void got_reset_password(QString *, QTcpSocket *);
 
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);

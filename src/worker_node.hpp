@@ -62,6 +62,8 @@ public:
 	Q_SLOT bool create_personal_event(const QString &, const QString &,
 									  const QString &, const QString &,
 									  const QString &, const QString &);
+	bool reset_password(QString & _p_user, QString & _p_email,
+						QString & _p_new_psswd);
 
 	bool username_exists(const QString & _user);
 	bool cleanup_db_insert();
@@ -98,8 +100,14 @@ public:
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_group_users(QString * _p_text,
 									 QTcpSocket * _p_socket);
+<<<<<<< src/worker_node.hpp
 	Q_SLOT void request_personal_event(QString * _p_text,
 									   QTcpSocket * _p_socket);
+=======
+	Q_SLOT void request_reset_password(QString * _p_text,
+									   QTcpSocket * _p_socket);
+
+>>>>>>> src/worker_node.hpp
 private:
 	volatile bool m_continue = true;
    
