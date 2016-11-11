@@ -529,6 +529,18 @@ bool worker_node::reset_password(QString & _p_user,
 	} else if (!(_p_user.size()
 				 && _p_email.size()
 				 && _p_new_psswd.size())) return false;
+	QSqlQuery q(m_db);
+	q.prepare("SELECT email FROM users WHERE user_name = ?");
+	q.bindValue(0, _p_user);
+
+	if(!q.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<q.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} else if (0==q.result()->size()) {
+		return false;
+	}
 
 	QSqlQuery query(m_db); 
 	query.prepare("UPDATE users SET passwd = ? "
