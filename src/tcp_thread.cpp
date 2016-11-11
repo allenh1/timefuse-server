@@ -173,6 +173,11 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_USERS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_list_group_users(temp, pClientSocket));
+		} else if (text.contains("REQUEST_RESET")) {
+			std::cout<<"request reset password received"<<std::endl;
+			text.replace("REQUEST_RESET ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_reset_password(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
