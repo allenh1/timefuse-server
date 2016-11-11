@@ -144,12 +144,12 @@ void worker_node::run()
 		served_client = false;
 		m_p_mutex->unlock();
 	wait_for_client:
-		for (;;m_p_thread->msleep(sleep_time >> 4)) {
+		for (;;m_p_thread->msleep(sleep_time)) {
 			m_p_mutex->lock();
 			served = served_client;
 			m_p_mutex->unlock();
 			if (served) goto end;
-		}
+		} state = connection_state::CONNECT_TO_MASTER;
 	end:
 		state = connection_state::CONNECT_TO_MASTER;
 		continue; /* go around again */
@@ -373,8 +373,6 @@ bool worker_node::list_group_users(const QString & group_name, QString * _msg) {
 		throw std::invalid_argument("failed to query the user's groups");
 		return false;
 	} else if (!query.size()) {
-		std::cerr<<"WARNING: query \""<<query.lastQuery().toStdString()<<"\""<<std::endl;
-		std::cerr<<"         was empty!"<<std::endl;
 		*_msg += "\n";
 		return true;
 	}
