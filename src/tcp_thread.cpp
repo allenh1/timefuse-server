@@ -188,6 +188,11 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_RESET ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_reset_password(temp, pClientSocket));
+		} else if (text.contains("REQUEST_EVENTS")) {
+			std::cout<<"request user events received"<<std::endl;
+			text.replace("REQUEST_EVENTS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_request_events(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }

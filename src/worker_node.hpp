@@ -62,6 +62,10 @@ public:
 	Q_SLOT bool create_personal_event(const QString &, const QString &,
 									  const QString &, const QString &,
 									  const QString &, const QString &);
+	Q_SLOT bool list_user_events(const QString &,
+								 const QString &,
+								 const QString &,
+								 QString *);
 	bool reset_password(QString & _p_user, QString & _p_email,
 						QString & _p_new_psswd);
 
@@ -99,13 +103,15 @@ public:
 	Q_SLOT void request_delete_group(QString * _p_text,
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_group_users(QString * _p_text,
-									 QTcpSocket * _p_socket);
+									QTcpSocket * _p_socket);
 	Q_SLOT void request_personal_event(QString * _p_text,
 									   QTcpSocket * _p_socket);
 	Q_SLOT void request_group_event(QString * _p_text,
-									   QTcpSocket * _p_socket);
+									QTcpSocket * _p_socket);
 	Q_SLOT void request_reset_password(QString * _p_text,
 									   QTcpSocket * _p_socket);
+	Q_SLOT void request_user_events(QString * _p_text,
+									QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
