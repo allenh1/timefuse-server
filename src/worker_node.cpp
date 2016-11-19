@@ -150,7 +150,7 @@ void worker_node::run()
 		if (read == "OK") {
 			state = connection_state::WAIT_FOR_CLIENT_CONNECT;
 			pSocket->disconnectFromHost();
-			delete pSocket;
+			delete pSocket; read.clear();
 			pSocket = NULL;
 		} m_p_mutex->lock();
 		served_client = false;
