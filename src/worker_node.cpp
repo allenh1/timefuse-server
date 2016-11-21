@@ -87,6 +87,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_request_events,
 			this, &worker_node::request_user_events,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_request_month_events,
+			this, &worker_node::request_personal_month_events,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -370,6 +373,44 @@ bool worker_node::list_user_events(const QString & owner,
 			+ query.value(3).toString() + ";"
 			+ query.value(4).toString() + "\n";
 	}
+	return true;
+}
+
+bool worker_node::list_user_month_events(const QString & owner,
+										 const quint8 & month,
+										 const quint16 & year,
+										 QString * _msg)
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!owner.size()) return false;
+	QString start_date = QString().setNum(year) + "-" + QString().setNum(month)+"-01";
+	QString end_date = QString().setNum((month == 12 ? year + 1 : year)) +
+		"-" + QString().setNum((month == 12 ? 1 : (month + 1)))+"-01";
+	QSqlQuery query(m_db); 
+	QString query_text = QString("SELECT schedule_item.date FROM schedule_item, schedules "
+								 "WHERE schedules.owner = '") + owner + "'"
+		+ "AND schedule_item.date > '" + start_date + "'"
+		+ "AND schedule_item.date < '" + end_date +
+		"' AND schedule_item.schedule_id = schedules.schedule_id;";
+	query.prepare(query_text);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} else if (!query.size()) {
+		*_msg = "0\n";
+		return true;
+	} int number = 0;
+
+	QStringList list;
+	for (; query.next();) {
+		list = query.value(0).toString().split("-");
+		number = (number | (1 << (list[2].toInt())));
+	} _msg->setNum(number); *(_msg) += "\n";
 	return true;
 }
 
@@ -1646,6 +1687,62 @@ void worker_node::request_user_events(QString * _p_text, QTcpSocket * _p_socket)
 			m_p_mutex->unlock();
 			return;
 		} else if (!list_user_events(user, start_day, stop_day, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO FETCH USER EVENTS\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_personal_month_events(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request user month events: \""<<_p_text->toStdString()
+			 <<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":");
+
+	if (separated.size() != 4) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user  = separated[0];
+	QString pass  = separated[1];
+	quint8 month  = separated[2].toInt();
+	quint16 year  = separated[3].toInt();
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!list_user_month_events(user, month, year, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH USER EVENTS\r\n");
 			m_p_mutex->lock();
 			served_client = true;

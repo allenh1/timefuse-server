@@ -193,6 +193,11 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_EVENTS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_request_events(temp, pClientSocket));
+		} else if (text.contains("REQUEST_PERSONAL_MONTH_EVENTS")) {
+			std::cout<<"request personal month events received"<<std::endl;
+			text.replace("REQUEST_PERSONAL_MONTH_EVENTS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_request_month_events(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
