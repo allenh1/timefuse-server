@@ -66,6 +66,10 @@ public:
 								 const QString &,
 								 const QString &,
 								 QString *);
+	Q_SLOT bool list_user_month_events(const QString &,
+									   const quint8 &,
+									   const quint16 &,
+									   QString *);
 	bool reset_password(QString & _p_user, QString & _p_email,
 						QString & _p_new_psswd);
 
@@ -112,6 +116,8 @@ public:
 									   QTcpSocket * _p_socket);
 	Q_SLOT void request_user_events(QString * _p_text,
 									QTcpSocket * _p_socket);
+	Q_SLOT void request_personal_month_events(QString * _p_text,
+											  QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
