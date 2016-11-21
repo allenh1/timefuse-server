@@ -351,7 +351,7 @@ bool worker_node::list_user_events(const QString & owner,
 		"schedule_item.duration, schedule_item.location, "
 		"schedule_item.event_name FROM schedule_item, schedules "
 								 "WHERE schedules.owner = '") + owner + "'"
-		+ "AND schedule_item.date > '" + start_date + "'"
+		+ "AND schedule_item.date >= '" + start_date + "'"
 		+ "AND schedule_item.date < '" + end_date +
 		"' AND schedule_item.schedule_id = schedules.schedule_id;";
 	query.prepare(query_text);
@@ -391,7 +391,7 @@ bool worker_node::list_user_month_events(const QString & owner,
 	QSqlQuery query(m_db); 
 	QString query_text = QString("SELECT schedule_item.date FROM schedule_item, schedules "
 								 "WHERE schedules.owner = '") + owner + "'"
-		+ "AND schedule_item.date > '" + start_date + "'"
+		+ "AND schedule_item.date >= '" + start_date + "'"
 		+ "AND schedule_item.date < '" + end_date +
 		"' AND schedule_item.schedule_id = schedules.schedule_id;";
 	query.prepare(query_text);
