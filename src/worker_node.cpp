@@ -367,10 +367,10 @@ bool worker_node::list_user_events(const QString & owner,
 	}
 
 	for (; query.next();) {
-		*_msg += query.value(0).toString() + ";"
-			+ query.value(1).toString() + ";"
-			+ query.value(2).toString() + ";"
-			+ query.value(3).toString() + ";"
+		*_msg += query.value(0).toString() + ":::"
+			+ query.value(1).toString() + ":::"
+			+ query.value(2).toString() + ":::"
+			+ query.value(3).toString() + ":::"
 			+ query.value(4).toString() + "\n";
 	}
 	return true;
@@ -507,7 +507,7 @@ bool worker_node::get_account_info(const QString & user_name, QString * _msg) {
 		return true;
 	} query.next();
 
-	*_msg += query.value(0).toString() + ":" + query.value(1).toString() + "\r\n";
+	*_msg += query.value(0).toString() + ":::" + query.value(1).toString() + "\r\n";
 	return true;
 }
 
@@ -946,7 +946,7 @@ void worker_node::request_create_account(QString * _p_text,
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 	
 	/* split along ':' characters */
-	QStringList separated = _p_text->split(":");
+	QStringList separated = _p_text->split(":::");
 	
 	if (separated.size() < 3) {
 		/* if there are not enough params, disconnect. */
@@ -1001,7 +1001,7 @@ void worker_node::request_reset_password(QString * _p_text, QTcpSocket * _p_sock
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() < 3) {
 		/* invalid params => disconnect */
@@ -1055,7 +1055,7 @@ void worker_node::request_login(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 	
 	/* split along ':' characters */
-	QStringList separated = _p_text->split(":");
+	QStringList separated = _p_text->split(":::");
 	
 	if (separated.size() < 2) {
 		/* if there are not enough params, disconnect. */
@@ -1099,7 +1099,7 @@ void worker_node::request_create_group(QString * _p_text, QTcpSocket * _p_socket
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() < 3) {
 		/* invalid params => disconnect */
@@ -1153,7 +1153,7 @@ void worker_node::request_add_to_group(QString * _p_text, QTcpSocket * _p_socket
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() < 4) {
 		/* invalid params => disconnect */
@@ -1208,7 +1208,7 @@ void worker_node::request_delete_group(QString * _p_text, QTcpSocket * _p_socket
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 3) {
 		/* invalid params => disconnect */
@@ -1262,7 +1262,7 @@ void worker_node::request_leave_group(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() < 4) {
 		/* invalid params => disconnect */
@@ -1317,7 +1317,7 @@ void worker_node::request_update_user(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() < 5) {
 		/* invalid params => disconnect */
@@ -1376,7 +1376,7 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(";");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 7) {
 		/* invalid params => disconnect */
@@ -1436,7 +1436,7 @@ void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(";");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 8) {
 		/* invalid params => disconnect */
@@ -1497,7 +1497,7 @@ void worker_node::request_user_groups(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 2) {
 		/* invalid params => disconnect */
@@ -1550,7 +1550,7 @@ void worker_node::request_account_info(QString * _p_text, QTcpSocket * _p_socket
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 2) {
 		/* invalid params => disconnect */
@@ -1603,7 +1603,7 @@ void worker_node::request_group_users(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 3) {
 		/* invalid params => disconnect */
@@ -1657,7 +1657,7 @@ void worker_node::request_user_events(QString * _p_text, QTcpSocket * _p_socket)
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 4) {
 		/* invalid params => disconnect */
@@ -1713,7 +1713,7 @@ void worker_node::request_personal_month_events(QString * _p_text, QTcpSocket * 
 	tcp_connection * p = new tcp_connection(client_host, _p_socket);
 
 	/* split along ':' characters */
-	QStringList separated= _p_text->split(":");
+	QStringList separated= _p_text->split(":::");
 
 	if (separated.size() != 4) {
 		/* invalid params => disconnect */
