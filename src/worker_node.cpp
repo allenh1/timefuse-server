@@ -777,6 +777,42 @@ bool worker_node::create_personal_event(
 	return query.value(0).toBool();
 }
 
+/** 
+ * Check if a user is a member of a group.
+ * 
+ * @param user The user in question.
+ * @param group Group in question.
+ * 
+ * @return True if the user is in the group.
+ */
+bool worker_node::user_in_group(
+	const QString & user,
+	const QString & group
+	)
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	}
+
+	QSqlQuery query(m_db); 
+	query.prepare("SELECT count(*) FROM users, user_group_relation, "
+				  "groups WHERE users.user_id = user_group_relation.user_id "
+				  "AND groups.group_id = user_group_relation.group_id "
+				  "AND users.user_name = ? "
+				  "AND groups.group_name = ?");	
+	query.bindValue(0, user);     query.bindValue(1, group);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query.next();
+
+	return query.value(0).toBool();
+}
+
 /**
  * @brief Try to create an account.
  *
@@ -1744,6 +1780,15 @@ void worker_node::request_group_events(QString * _p_text, QTcpSocket * _p_socket
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
+			return;
+		} else if (!user_in_group(user, group)) {
+			msg = new QString("ERROR: USER ");
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"!\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
 			return;
 		} else if (!list_user_events(group, start_day, stop_day, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH USER EVENTS\r\n");
