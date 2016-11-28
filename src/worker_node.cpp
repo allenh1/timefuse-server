@@ -111,6 +111,12 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_friend_requests,
 			this, &worker_node::request_friend_requests,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_absent,
+			this, &worker_node::request_absent,
+			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_present,
+			this, &worker_node::request_present,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -1106,6 +1112,44 @@ bool worker_node::cleanup_group_insert()
 	return true;
 }
 
+bool worker_node::present(const QString & _user) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (_user.size()==0) return false;
+
+	QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET absent = 0 "
+				  "WHERE user_name = ? ");
+	query.bindValue(0, _user);   
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} return true;
+}
+
+bool worker_node::absent(const QString & _user) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (_user.size()==0) return false;
+
+	QSqlQuery query(m_db);
+    query.prepare("UPDATE users SET absent = 1 "
+				  "WHERE user_name = ? ");
+	query.bindValue(0, _user);   
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} return true;
+}
+
 bool worker_node::cleanup_user_group_insert()
 {
 	if(!m_db.open()) {
@@ -1161,6 +1205,112 @@ bool worker_node::cleanup_user_group_insert()
 	return true;
 }
 
+void worker_node::request_absent(QString * _p_text,
+								 QTcpSocket * _p_socket) {
+	std::cout<<"create friendship request: \""<<
+		_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+	
+	/* split along ':' characters */
+	QStringList separated = _p_text->split(":::");
+	
+	if (separated.size() < 2) {
+		/* if there are not enough params, disconnect. */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	
+	QString * msg;
+
+	try {
+		if (!try_login(_user, _pass)) {
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			return;
+		} else if (!absent(_user)) {
+			msg = new QString("ERROR: USER NOT ABSENT\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_present(QString * _p_text,
+								 QTcpSocket * _p_socket) {
+	std::cout<<"create friendship request: \""<<
+		_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+	
+	/* split along ':' characters */
+	QStringList separated = _p_text->split(":::");
+	
+	if (separated.size() < 2) {
+		/* if there are not enough params, disconnect. */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString _user = separated[0];
+	QString _pass = separated[1];
+	
+	QString * msg;
+
+	try {
+		if (!try_login(_user, _pass)) {
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			return;
+		} else if (!present(_user)) {
+			msg = new QString("ERROR: USER NOT PRESENT\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else msg = new QString("OK\r\n");
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
 void worker_node::request_accept_friend(QString * _p_text,
 										QTcpSocket * _p_socket) {
 	std::cout<<"create friendship request: \""<<
@@ -1213,7 +1363,6 @@ void worker_node::request_accept_friend(QString * _p_text,
 	served_client = true;
 	m_p_mutex->unlock();
 	delete _p_text;
-	
 }
 
 void worker_node::request_create_friendship(QString * _p_text,
