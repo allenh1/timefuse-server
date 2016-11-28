@@ -68,8 +68,8 @@ public:
 	Q_SLOT bool create_friendship(const QString &, const QString &);
 	Q_SLOT bool accept_friend(const QString &, const QString &);
 	Q_SLOT bool delete_friend(const QString &, const QString &);
-	Q_SLOT bool friend_requests(const QString &);
-	Q_SLOT bool request_friends(const QString &);	
+	Q_SLOT bool friend_requests(const QString &, QString *);
+	Q_SLOT bool friends(const QString &, QString *);	
 	Q_SLOT bool list_user_events(const QString &,
 								 const QString &,
 								 const QString &,

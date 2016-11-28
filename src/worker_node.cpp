@@ -956,11 +956,11 @@ bool worker_node::delete_friend(const QString & _user,
 	return query.value(0).toBool();
 }
 
-bool worker_node::request_friends(const QString & _user) {
+bool worker_node::friends(const QString & _user, QString * _msg) {
 	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
-	} else if (_user.size()==0 || _friend.size()==0) return false;
+	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db); 
 	query.prepare("SELECT users.user_name FROM users, user_friend_relation"
@@ -983,11 +983,11 @@ bool worker_node::request_friends(const QString & _user) {
 	return true;
 }
 
-bool worker_node::friend_requests(const QString & _user) {
+bool worker_node::friend_requests(const QString & _user, QString * _msg) {
 	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
-	} else if (_user.size()==0 || _friend.size()==0) return false;
+	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db); 
     query.prepare("SELECT users.user_name FROM users, user_friend_relation"
@@ -1219,7 +1219,7 @@ void worker_node::request_accept_friend(QString * _p_text,
 }
 
 void worker_node::request_create_friendship(QString * _p_text,
-											QTcpSocket * _p_socet) {
+											QTcpSocket * _p_socket) {
 	std::cout<<"create friendship request: \""<<
 		_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
@@ -1307,7 +1307,7 @@ void worker_node::request_friends(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!request_friends(_user)) {
+		} else if (!friends(_user, msg = new QString())) {
 			msg = new QString("ERROR: USER DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
@@ -1414,7 +1414,7 @@ void worker_node::request_friend_requests(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!friend_requests(_user)) {
+		} else if (!friends(_user, msg = new QString())) {
 			msg = new QString("ERROR: USER DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
