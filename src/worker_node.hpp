@@ -37,6 +37,7 @@ public:
 					const QString & _email);
 	bool user_in_group(const QString & _user,
 					   const QString & _group);
+	bool group_exists(const QString & _group);
 
 	Q_SIGNAL void established_client_connection();
 	Q_SIGNAL void finished_client_job();
@@ -122,6 +123,8 @@ public:
 									 QTcpSocket * _p_socket);
 	Q_SLOT void request_personal_month_events(QString * _p_text,
 											  QTcpSocket * _p_socket);
+	Q_SLOT void request_group_month_events(QString * _p_text,
+										   QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    

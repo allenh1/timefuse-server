@@ -93,6 +93,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_request_group_events,
 			this, &worker_node::request_group_events,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_request_group_month_events,
+			this, &worker_node::request_group_month_events,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -269,6 +272,33 @@ bool worker_node::leave_group(const QString & user_name, const QString & group_n
 	return query.value(0).toBool();
 }
 
+/** 
+ * Check if a group exists.
+ * 
+ * @param _group Name of the group to check.
+ * 
+ * @return True if the supplied group exists.
+ */
+bool worker_node::group_exists(const QString & _group) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!_group.size()) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("SELECT count(*) FROM groups WHERE group_name = ?");
+	query.bindValue(0, _group);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query.next();
+
+	return query.value(0).toBool();
+}
+
 /**
  * @brief Delete a group using stored procedure.
  *
@@ -351,8 +381,8 @@ bool worker_node::list_user_events(const QString & owner,
 
 	QSqlQuery query(m_db); 
 	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
-		"schedule_item.duration, schedule_item.location, "
-		"schedule_item.event_name FROM schedule_item, schedules "
+								 "schedule_item.duration, schedule_item.location, "
+								 "schedule_item.event_name FROM schedule_item, schedules "
 								 "WHERE schedules.owner = '") + owner + "'"
 		+ "AND schedule_item.date >= '" + start_date + "'"
 		+ "AND schedule_item.date < '" + end_date +
@@ -1783,7 +1813,7 @@ void worker_node::request_group_events(QString * _p_text, QTcpSocket * _p_socket
 			return;
 		} else if (!user_in_group(user, group)) {
 			msg = new QString("ERROR: USER ");
-			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"!\r\n";
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"\r\n";
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
@@ -1848,6 +1878,81 @@ void worker_node::request_personal_month_events(QString * _p_text, QTcpSocket * 
 			return;
 		} else if (!list_user_month_events(user, month, year, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH USER EVENTS\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_group_month_events(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request group month events: \""<<_p_text->toStdString()
+			 <<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":::");
+
+	if (separated.size() != 5) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user  = separated[0];
+	QString pass  = separated[1];
+	quint8 month  = separated[2].toInt();
+	quint16 year  = separated[3].toInt();
+	QString group = separated[4];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!group_exists(group)) {
+			msg = new QString("ERROR: GROUP ");
+			*msg += "\"" + group + "\" DOES NOT EXIST\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else if (!user_in_group(user, group)) {
+			msg = new QString("ERROR: USER ");
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else if (!list_user_month_events(group, month, year, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO FETCH GROUP EVENTS\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
