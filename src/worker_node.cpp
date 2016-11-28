@@ -993,7 +993,7 @@ bool worker_node::friend_requests(const QString & _user, QString * _msg) {
     query.prepare("SELECT users.user_name FROM users, user_friend_relation "
 				  "WHERE users.user_name = ? "
 				  "AND users.user_id = user_friend_relation.friend_id "
-				  "AND user_friend_relation.accepted = false");
+				  "AND user_friend_relation.accepted = 0");
 	query.bindValue(0, _user);   
 	
 	if(!query.exec()) {
