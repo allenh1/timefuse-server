@@ -354,8 +354,8 @@ bool worker_node::list_user_events(const QString & owner,
 
 	QSqlQuery query(m_db); 
 	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
-		"schedule_item.duration, schedule_item.location, "
-		"schedule_item.event_name FROM schedule_item, schedules "
+								 "schedule_item.duration, schedule_item.location, "
+								 "schedule_item.event_name FROM schedule_item, schedules "
 								 "WHERE schedules.owner = '") + owner + "'"
 		+ "AND schedule_item.date >= '" + start_date + "'"
 		+ "AND schedule_item.date < '" + end_date +
@@ -1905,6 +1905,15 @@ void worker_node::request_group_month_events(QString * _p_text, QTcpSocket * _p_
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
+			return;
+		} else if (!user_in_group(user, group)) {
+			msg = new QString("ERROR: USER ");
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"!\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
 			return;
 		} else if (!list_user_month_events(group, month, year, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH GROUP EVENTS\r\n");

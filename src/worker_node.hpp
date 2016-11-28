@@ -123,7 +123,7 @@ public:
 	Q_SLOT void request_personal_month_events(QString * _p_text,
 											  QTcpSocket * _p_socket);
 	Q_SLOT void request_group_month_events(QString * _p_text,
-										  QTcpSocket * _p_socket);
+										   QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
