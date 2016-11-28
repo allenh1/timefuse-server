@@ -69,7 +69,9 @@ public:
 	Q_SLOT bool accept_friend(const QString &, const QString &);
 	Q_SLOT bool delete_friend(const QString &, const QString &);
 	Q_SLOT bool friend_requests(const QString &, QString *);
-	Q_SLOT bool friends(const QString &, QString *);	
+	Q_SLOT bool friends(const QString &, QString *);
+	Q_SLOT bool absent(const QString &);
+	Q_SLOT bool present(const QString &);
 	Q_SLOT bool list_user_events(const QString &,
 								 const QString &,
 								 const QString &,
@@ -140,6 +142,10 @@ public:
 									  QTcpSocket * _p_socket);
 	Q_SLOT void request_friend_requests(QString * _p_text,
 										QTcpSocket * _p_socket);
+	Q_SLOT void request_absent(QString * _p_text,
+							   QTcpSocket * _p_socket);
+	Q_SLOT void request_present(QString * _p_text,
+							   QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    
