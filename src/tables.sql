@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS schedule_item(
 	event_name VARCHAR(512) NOT NULL,
 	schedule_item_id INTEGER NOT NULL AUTO_INCREMENT,
 	schedule_id INTEGER NOT NULL,
+	immutable BOOLEAN NOT NULL,
+	deadline_date DATE,
+	deadline_time TIME,
 	PRIMARY KEY(schedule_item_id),
 	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
 );
