@@ -37,6 +37,7 @@ public:
 					const QString & _email);
 	bool user_in_group(const QString & _user,
 					   const QString & _group);
+	bool group_exists(const QString & _group);
 
 	Q_SIGNAL void established_client_connection();
 	Q_SIGNAL void finished_client_job();

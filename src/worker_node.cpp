@@ -272,6 +272,33 @@ bool worker_node::leave_group(const QString & user_name, const QString & group_n
 	return query.value(0).toBool();
 }
 
+/** 
+ * Check if a group exists.
+ * 
+ * @param _group Name of the group to check.
+ * 
+ * @return True if the supplied group exists.
+ */
+bool worker_node::group_exists(const QString & _group) {
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!_group.size()) return false;
+
+	QSqlQuery query(m_db); 
+	query.prepare("SELECT count(*) FROM groups WHERE group_name = ?");
+	query.bindValue(0, _group);
+	
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("something failed during procedure call");
+		return false;
+	} query.next();
+
+	return query.value(0).toBool();
+}
+
 /**
  * @brief Delete a group using stored procedure.
  *
@@ -1786,7 +1813,7 @@ void worker_node::request_group_events(QString * _p_text, QTcpSocket * _p_socket
 			return;
 		} else if (!user_in_group(user, group)) {
 			msg = new QString("ERROR: USER ");
-			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"!\r\n";
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"\r\n";
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
@@ -1906,9 +1933,18 @@ void worker_node::request_group_month_events(QString * _p_text, QTcpSocket * _p_
 			served_client = true;
 			m_p_mutex->unlock();
 			return;
+		} else if (!group_exists(group)) {
+			msg = new QString("ERROR: GROUP ");
+			*msg += "\"" + group + "\" DOES NOT EXIST\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
 		} else if (!user_in_group(user, group)) {
 			msg = new QString("ERROR: USER ");
-			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"!\r\n";
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"\r\n";
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
