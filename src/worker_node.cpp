@@ -963,8 +963,8 @@ bool worker_node::request_friends(const QString & _user) {
 	} else if (_user.size()==0 || _friend.size()==0) return false;
 
 	QSqlQuery query(m_db); 
-	query.prepare("SELECT users.username FROM users, user_friend_relation"
-				  "WHERE users.username = ? "
+	query.prepare("SELECT users.user_name FROM users, user_friend_relation"
+				  "WHERE users.user_name = ? "
 				  "AND (users.user_id = user_friend_relation.user_id "
 				  "OR users.user_id = user_friend_relation.friend_id)");
 	query.bindValue(0, _user); 
@@ -990,8 +990,8 @@ bool worker_node::friend_requests(const QString & _user) {
 	} else if (_user.size()==0 || _friend.size()==0) return false;
 
 	QSqlQuery query(m_db); 
-    query.prepare("SELECT users.username FROM users, user_friend_relation"
-				  "WHERE users.username = ? "
+    query.prepare("SELECT users.user_name FROM users, user_friend_relation"
+				  "WHERE users.user_name = ? "
 				  "AND users.user_id = user_friend_relation.friend_id"
 				  "AND user_friend_relation.accepted = false");
 	query.bindValue(0, _user);   
@@ -1283,7 +1283,7 @@ void worker_node::request_friends(QString * _p_text,
 	/* split along ':' characters */
 	QStringList separated = _p_text->split(":::");
 	
-	if (separated.size() < 3) {
+	if (separated.size() < 2) {
 		/* if there are not enough params, disconnect. */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
@@ -1295,7 +1295,6 @@ void worker_node::request_friends(QString * _p_text,
 
 	QString _user = separated[0];
 	QString _pass = separated[1];
-	QString _friend = separated[2];
 	
 	QString * msg;
 
@@ -1308,8 +1307,8 @@ void worker_node::request_friends(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!accept_friend(_user, _friend)) {
-			msg = new QString("ERROR: FRIEND REQUEST DOES NOT EXIST\r\n");
+		} else if (!request_friends(_user)) {
+			msg = new QString("ERROR: USER DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
@@ -1362,8 +1361,8 @@ void worker_node::request_delete_friend(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!accept_friend(_user, _friend)) {
-			msg = new QString("ERROR: FRIEND REQUEST DOES NOT EXIST\r\n");
+		} else if (!delete_friend(_user, _friend)) {
+			msg = new QString("ERROR: FRIEND DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
@@ -1391,7 +1390,7 @@ void worker_node::request_friend_requests(QString * _p_text,
 	/* split along ':' characters */
 	QStringList separated = _p_text->split(":::");
 	
-	if (separated.size() < 3) {
+	if (separated.size() < 2) {
 		/* if there are not enough params, disconnect. */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
@@ -1403,7 +1402,6 @@ void worker_node::request_friend_requests(QString * _p_text,
 
 	QString _user = separated[0];
 	QString _pass = separated[1];
-	QString _friend = separated[2];
 	
 	QString * msg;
 
@@ -1416,8 +1414,8 @@ void worker_node::request_friend_requests(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!accept_friend(_user, _friend)) {
-			msg = new QString("ERROR: FRIEND REQUEST DOES NOT EXIST\r\n");
+		} else if (!friend_requests(_user)) {
+			msg = new QString("ERROR: USER DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
