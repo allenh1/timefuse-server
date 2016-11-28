@@ -943,9 +943,11 @@ bool worker_node::delete_friend(const QString & _user,
 		return false;
 	} else if (_user.size()==0 || _friend.size()==0) return false;
 
-	QSqlQuery query(m_db); 
-	query.prepare("CALL DeleteFriend(?, ?, @success);");
-	query.bindValue(0, _user); query.bindValue(1, _friend);     
+	QSqlQuery query(m_db);
+	QString txt = "CALL DeleteFriend(\'";
+	txt+=_user + "\', \'" + _friend + "\', " + "@success);";
+	std::cerr<<"txt = "<<txt.toStdString()<<std::endl;
+	query.prepare(txt); 
 	
 	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
@@ -969,8 +971,16 @@ bool worker_node::friends(const QString & _user, QString * _msg) {
 	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db);
-	QString txt = "CALL GetFriends(\'";
-	txt+=_user + "\', " + "@success)";
+	QString txt = "SELECT DISTINCT u2.user_name ";
+	txt+="FROM users u1, users u2, user_friend_relation ";
+	txt+="WHERE u1.user_name = '"+ _user +"' AND ";
+	txt+="((user_friend_relation.user_id = u1.user_id AND ";
+	txt+="user_friend_relation.friend_id = u2.user_id) OR ";
+	txt+="(user_friend_relation.friend_id = u1.user_id AND ";
+	txt+="user_friend_relation.user_id = u2.user_id)) AND ";
+	txt+="u2.user_name != '" + _user + "' AND ";
+	txt+="user_friend_relation.accepted = 1;";
+   	std::cerr<<"txt = "<<txt.toStdString()<<std::endl;
 	query.prepare(txt);   
 	
 	if(!query.exec()) {
@@ -978,12 +988,10 @@ bool worker_node::friends(const QString & _user, QString * _msg) {
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
 		throw std::invalid_argument("something failed during procedure call");
 		return false;
-	} else if (!query.size()) {
-		*_msg += "\n";
-		return true;
 	}
 
 	for (; query.next();) *_msg += query.value(0).toString() + "\n";
+	std::cerr<<"_msg = "<<_msg->toStdString()<<std::endl;
 	return true;
 }
 
@@ -994,8 +1002,14 @@ bool worker_node::friend_requests(const QString & _user, QString * _msg) {
 	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db);
-	QString txt = "CALL GetFriendRequests(\'";
-	txt+=_user + "\', " + "@success)";
+	QString txt = "SELECT DISTINCT u2.user_name FROM ";
+	txt+="users u1, users u2, user_friend_relation ";
+	txt+="WHERE u1.user_name = '" + _user + "' AND ";
+	txt+="user_friend_relation.friend_id = u1.user_id AND ";
+	txt+="user_friend_relation.user_id = u2.user_id AND ";
+	txt+="u2.user_name != '" + _user + "' AND ";
+	txt+="user_friend_relation.accepted = 0; ";
+	std::cerr<<"txt = "<<txt.toStdString()<<std::endl;
 	query.prepare(txt);   
 	
 	if(!query.exec()) {
@@ -1003,12 +1017,10 @@ bool worker_node::friend_requests(const QString & _user, QString * _msg) {
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
 		throw std::invalid_argument("something failed during procedure call");
 		return false;
-	} else if (!query.size()) {
-		*_msg += "\n";
-		return true;
-	}
+	} 
 
 	for (; query.next();) *_msg += query.value(0).toString() + "\n";
+	std::cerr<<"_msg = "<<_msg->toStdString()<<std::endl;
 	return true;
 }
 
@@ -1020,7 +1032,8 @@ bool worker_node::accept_friend(const QString & _user, const QString & _friend) 
 
 	QSqlQuery query(m_db);
 	QString txt = "CALL AcceptFriend(\'";
-	txt+=_user + "\', \'" + _friend + "\', " + "@success)";
+	txt+=_user + "\', \'" + _friend + "\', " + "@success);";
+	std::cerr<<"txt = "<<txt.toStdString()<<std::endl;
 	query.prepare(txt);   
 	
 	if(!query.exec()) {
@@ -1058,7 +1071,8 @@ bool worker_node::create_friendship(const QString & _user,
 
 	QSqlQuery query(m_db);
 	QString txt = "CALL AddFriend(\'";
-	txt+=_user + "\', \'" + _friend + "\', " + "@success)";
+	txt+=_user + "\', \'" + _friend + "\', " + "@success);";
+	std::cerr<<"txt = "<<txt.toStdString()<<std::endl;
 	query.prepare(txt);   
 	
 	if(!query.exec()) {
@@ -1462,7 +1476,7 @@ void worker_node::request_friends(QString * _p_text,
 			Q_EMIT(disconnect_client(p, msg));
 			delete _p_text;
 			return;
-		} else msg = new QString("OK\r\n");
+		} 
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
 	} Q_EMIT(disconnect_client(p, msg));
@@ -1561,7 +1575,7 @@ void worker_node::request_friend_requests(QString * _p_text,
 			m_p_mutex->unlock();
 			Q_EMIT(disconnect_client(p, msg));
 			return;
-		} else if (!friends(_user, msg = new QString())) {
+		} else if (!friend_requests(_user, msg = new QString())) {
 			msg = new QString("ERROR: USER DOES NOT EXIST\r\n");
 			m_p_mutex->lock();
 			served_client = true;
@@ -1569,7 +1583,7 @@ void worker_node::request_friend_requests(QString * _p_text,
 			Q_EMIT(disconnect_client(p, msg));
 			delete _p_text;
 			return;
-		} else msg = new QString("OK\r\n");
+		} 
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
 	} Q_EMIT(disconnect_client(p, msg));
