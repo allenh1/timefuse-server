@@ -213,6 +213,11 @@ void tcp_thread::readFromClient()
 			text.replace("CREATE_FRIENDSHIP ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_create_friendship(temp, pClientSocket));
+		} else if (text.contains("ACCEPT_FRIEND")) {
+			std::cout<<"request group month events received"<<std::endl;
+			text.replace("ACCEPT_FRIEND ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_accept_friend(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }

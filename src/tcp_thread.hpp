@@ -54,6 +54,7 @@ public:
 	Q_SIGNAL void got_request_group_events(QString *, QTcpSocket *);
 	Q_SIGNAL void got_request_group_month_events(QString *, QTcpSocket *);
 	Q_SIGNAL void got_create_friendship(QString *, QTcpSocket *);
+	Q_SIGNAL void got_accept_friend(QString *, QTcpSocket *);
 
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);
