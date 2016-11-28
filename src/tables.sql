@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS users(
 	passwd VARCHAR(512) NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	cellphone BIGINT,
+	absent_start DATE,
+	absent_duration INTEGER,
 	PRIMARY KEY(user_id),
 	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
 );
@@ -59,4 +61,11 @@ CREATE TABLE IF NOT EXISTS user_group_relation(
        group_id INTEGER NOT NULL,
        FOREIGN KEY(user_id) REFERENCES users(user_id),
        FOREIGN KEY(group_id) REFERENCES groups(group_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_friend_relation(
+	   user_id INTEGER NOT NULL,
+	   friend_id INTEGER NOT NULL,
+	   FOREIGN KEY(user_id) REFERENCES users(user_id),
+	   FOREIGN KEY(friend_id) REFERENCES users(user_id)
 );
