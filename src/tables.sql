@@ -64,8 +64,10 @@ CREATE TABLE IF NOT EXISTS user_group_relation(
 );
 
 CREATE TABLE IF NOT EXISTS user_friend_relation(
+	   relation_id INTEGER NOT NULL AUTO_INCREMENT,
 	   user_id INTEGER NOT NULL,
 	   friend_id INTEGER NOT NULL,
+	   PRIMARY KEY (relation_id),
 	   FOREIGN KEY(user_id) REFERENCES users(user_id),
 	   FOREIGN KEY(friend_id) REFERENCES users(user_id)
 );
