@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS groups(
        group_id INTEGER NOT NULL AUTO_INCREMENT,
        schedule_id INTEGER NOT NULL,
        group_name VARCHAR(100) NOT NULL,
+	   color INTEGER,
        PRIMARY KEY (group_id),
        FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id)
 );
