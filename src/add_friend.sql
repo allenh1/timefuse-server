@@ -22,7 +22,7 @@ BEGIN
  ELSE
   -- add an element to the user friend relation.
   INSERT INTO user_friend_relation(user_id, friend_id, accepted)
-  VALUES(uid, fid, false);
+  VALUES(uid, fid, 1);
   SET success = 1;
  END IF;
 END$$

@@ -963,7 +963,7 @@ bool worker_node::friends(const QString & _user, QString * _msg) {
 	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db); 
-	query.prepare("SELECT users.user_name FROM users, user_friend_relation"
+	query.prepare("SELECT users.user_name FROM users, user_friend_relation "
 				  "WHERE users.user_name = ? "
 				  "AND (users.user_id = user_friend_relation.user_id "
 				  "OR users.user_id = user_friend_relation.friend_id)");
@@ -989,10 +989,10 @@ bool worker_node::friend_requests(const QString & _user, QString * _msg) {
 		return false;
 	} else if (_user.size()==0) return false;
 
-	QSqlQuery query(m_db); 
-    query.prepare("SELECT users.user_name FROM users, user_friend_relation"
+	QSqlQuery query(m_db);
+    query.prepare("SELECT users.user_name FROM users, user_friend_relation "
 				  "WHERE users.user_name = ? "
-				  "AND users.user_id = user_friend_relation.friend_id"
+				  "AND users.user_id = user_friend_relation.friend_id "
 				  "AND user_friend_relation.accepted = false");
 	query.bindValue(0, _user);   
 	
@@ -1016,9 +1016,10 @@ bool worker_node::accept_friend(const QString & _user, const QString & _friend) 
 		return false;
 	} else if (_user.size()==0 || _friend.size()==0) return false;
 
-	QSqlQuery query(m_db); 
-	query.prepare("CALL AcceptFriend(?, ?, @success)");
-	query.bindValue(0, _user); query.bindValue(1, _friend);     
+	QSqlQuery query(m_db);
+	QString txt = "CALL AcceptFriend(\'";
+	txt+=_user + "\', \'" + _friend + "\', " + "@success)";
+	query.prepare(txt);   
 	
 	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
@@ -1053,9 +1054,10 @@ bool worker_node::create_friendship(const QString & _user,
 		return false;
 	}
 
-	QSqlQuery query(m_db); 
-	query.prepare("CALL AddFriend(?, ?, @success)");
-	query.bindValue(0, _user); query.bindValue(1, _friend);     
+	QSqlQuery query(m_db);
+	QString txt = "CALL AddFriend(\'";
+	txt+=_user + "\', \'" + _friend + "\', " + "@success)";
+	query.prepare(txt);   
 	
 	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
