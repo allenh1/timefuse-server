@@ -957,22 +957,20 @@ bool worker_node::delete_friend(const QString & _user,
 }
 
 bool worker_node::friends(const QString & _user, QString * _msg) {
-	if(!m_db.open()) {
+    if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
 	} else if (_user.size()==0) return false;
 
-	QSqlQuery query(m_db); 
-	query.prepare("SELECT users.user_name FROM users, user_friend_relation "
-				  "WHERE users.user_name = ? "
-				  "AND (users.user_id = user_friend_relation.user_id "
-				  "OR users.user_id = user_friend_relation.friend_id)");
-	query.bindValue(0, _user); 
+	QSqlQuery query(m_db);
+	QString txt = "CALL GetFriends(\'";
+	txt+=_user + "\', " + "@success)";
+	query.prepare(txt);   
 	
-    if(!query.exec()) {
+	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
-		throw std::invalid_argument("failed to query the user's groups");
+		throw std::invalid_argument("something failed during procedure call");
 		return false;
 	} else if (!query.size()) {
 		*_msg += "\n";
@@ -984,22 +982,20 @@ bool worker_node::friends(const QString & _user, QString * _msg) {
 }
 
 bool worker_node::friend_requests(const QString & _user, QString * _msg) {
-	if(!m_db.open()) {
+     if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
 	} else if (_user.size()==0) return false;
 
 	QSqlQuery query(m_db);
-    query.prepare("SELECT users.user_name FROM users, user_friend_relation "
-				  "WHERE users.user_name = ? "
-				  "AND users.user_id = user_friend_relation.friend_id "
-				  "AND user_friend_relation.accepted = 0");
-	query.bindValue(0, _user);   
+	QString txt = "CALL GetFriendRequests(\'";
+	txt+=_user + "\', " + "@success)";
+	query.prepare(txt);   
 	
 	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
-		throw std::invalid_argument("failed to query the user's groups");
+		throw std::invalid_argument("something failed during procedure call");
 		return false;
 	} else if (!query.size()) {
 		*_msg += "\n";
