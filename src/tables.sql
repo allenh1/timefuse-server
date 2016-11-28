@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS schedule_item(
 	date DATE NOT NULL,
 	start_time TIME NOT NULL,
 	is_repeated BOOLEAN NOT NULL,
-	duration INTEGER NOT NULL,
+	duration TIME NOT NULL,
 	location VARCHAR(512)  NOT NULL,
 	event_name VARCHAR(512) NOT NULL,
 	schedule_item_id INTEGER NOT NULL AUTO_INCREMENT,
