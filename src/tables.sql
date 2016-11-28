@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS groups(
        group_id INTEGER NOT NULL AUTO_INCREMENT,
        schedule_id INTEGER NOT NULL,
        group_name VARCHAR(100) NOT NULL,
+	   color INTEGER,
        PRIMARY KEY (group_id),
        FOREIGN KEY (schedule_id) REFERENCES schedules(schedule_id)
 );
@@ -67,8 +68,11 @@ CREATE TABLE IF NOT EXISTS user_group_relation(
 );
 
 CREATE TABLE IF NOT EXISTS user_friend_relation(
+	   relation_id INTEGER NOT NULL AUTO_INCREMENT,
 	   user_id INTEGER NOT NULL,
 	   friend_id INTEGER NOT NULL,
+	   accepted BOOLEAN NOT NULL,
+	   PRIMARY KEY (relation_id),
 	   FOREIGN KEY(user_id) REFERENCES users(user_id),
 	   FOREIGN KEY(friend_id) REFERENCES users(user_id)
 );
