@@ -208,6 +208,31 @@ void tcp_thread::readFromClient()
 			text.replace("REQUEST_GROUP_MONTH_EVENTS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_request_group_month_events(temp, pClientSocket));
+		} else if (text.contains("CREATE_FRIENDSHIP")) {
+			std::cout<<"request create friendship"<<std::endl;
+			text.replace("CREATE_FRIENDSHIP ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_create_friendship(temp, pClientSocket));
+		} else if (text.contains("ACCEPT_FRIEND")) {
+			std::cout<<"request accept friend"<<std::endl;
+			text.replace("ACCEPT_FRIEND ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_accept_friend(temp, pClientSocket));
+		} else if (text.contains("REQUEST_FRIENDS")) {
+			std::cout<<"request friends"<<std::endl;
+			text.replace("REQUEST_FRIENDS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_request_friends(temp, pClientSocket));
+		} else if (text.contains("DELETE_FRIEND")) {
+			std::cout<<"request delete friend"<<std::endl;
+			text.replace("DELETE_FRIEND ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_delete_friend(temp, pClientSocket));
+		} else if (text.contains("FRIEND_REQUESTS")) {
+			std::cout<<"request friend requests"<<std::endl;
+			text.replace("FRIEND_REQUESTS ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_friend_requests(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }
