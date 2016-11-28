@@ -93,6 +93,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_request_group_events,
 			this, &worker_node::request_group_events,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_request_group_month_events,
+			this, &worker_node::request_group_month_events,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -1848,6 +1851,63 @@ void worker_node::request_personal_month_events(QString * _p_text, QTcpSocket * 
 			return;
 		} else if (!list_user_month_events(user, month, year, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH USER EVENTS\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_group_month_events(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request group month events: \""<<_p_text->toStdString()
+			 <<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":::");
+
+	if (separated.size() != 5) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user  = separated[0];
+	QString pass  = separated[1];
+	quint8 month  = separated[2].toInt();
+	quint16 year  = separated[3].toInt();
+	QString group = separated[4];
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!list_user_month_events(group, month, year, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO FETCH GROUP EVENTS\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
