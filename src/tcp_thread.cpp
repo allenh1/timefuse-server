@@ -233,6 +233,16 @@ void tcp_thread::readFromClient()
 			text.replace("FRIEND_REQUESTS ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_friend_requests(temp, pClientSocket));
+		} else if (text.contains("ABSENT")) {
+			std::cout<<"request friend requests"<<std::endl;
+			text.replace("ABSENT ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_absent(temp, pClientSocket));
+		} else if (text.contains("PRESENT")) {
+			std::cout<<"request friend requests"<<std::endl;
+			text.replace("PRESENT ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_present(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }

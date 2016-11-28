@@ -58,6 +58,8 @@ public:
 	Q_SIGNAL void got_request_friends(QString *, QTcpSocket *);
 	Q_SIGNAL void got_delete_friend(QString *, QTcpSocket *);
 	Q_SIGNAL void got_friend_requests(QString *, QTcpSocket *);
+	Q_SIGNAL void got_present(QString *, QTcpSocket *);
+	Q_SIGNAL void got_absent(QString *, QTcpSocket *);
 
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);

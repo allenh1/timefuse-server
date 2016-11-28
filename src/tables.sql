@@ -41,8 +41,7 @@ CREATE TABLE IF NOT EXISTS users(
 	passwd VARCHAR(512) NOT NULL,
 	email VARCHAR(100) NOT NULL,
 	cellphone BIGINT,
-	absent_start DATE,
-	absent_duration INTEGER,
+	absent BOOLEAN,
 	PRIMARY KEY(user_id),
 	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
 );
