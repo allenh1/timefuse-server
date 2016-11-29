@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS schedule_item(
 	immutable BOOLEAN NOT NULL,
 	deadline_date DATE,
 	deadline_time TIME,
+	-- this is the offset from UTC (e.g. Central time is -6:00)
+	timezone_offset INT,
 	PRIMARY KEY(schedule_item_id),
 	FOREIGN KEY(schedule_id) REFERENCES schedules(schedule_id)
 );
