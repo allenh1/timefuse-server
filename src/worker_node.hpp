@@ -65,7 +65,7 @@ public:
 	Q_SLOT bool create_personal_event(const QString &, const QString &,
 									  const QString &, const QString &,
 									  const QString &, const QString &,
-									  const QString &);
+									  const QString &, const QString &);
 	Q_SLOT bool create_friendship(const QString &, const QString &);
 	Q_SLOT bool accept_friend(const QString &, const QString &);
 	Q_SLOT bool delete_friend(const QString &, const QString &);

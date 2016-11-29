@@ -799,6 +799,7 @@ bool worker_node::create_personal_event(
 	const QString & start,
 	const QString & duration,
 	const QString & location,
+	const QString & timezone_offset,
 	const QString & name,
 	const QString & immutable
 	)
@@ -809,7 +810,7 @@ bool worker_node::create_personal_event(
 	}
 
 	QSqlQuery query(m_db); 
-	query.prepare("CALL AddPersonalEvent(?, ?, ?, ?, ?, ?, ?, @success)");
+	query.prepare("CALL AddPersonalEvent(?, ?, ?, ?, ?, ?, ?, ?, @success)");
 
 	/* convert minutes to a time */
 	bool ok; int duration_int = duration.toInt(&ok);
@@ -819,10 +820,18 @@ bool worker_node::create_personal_event(
 		throw std::invalid_argument("invalid duration passed");
 		return false;
 	} QTime time(duration_int / 60, duration_int % 60);
+
+	int offset = timezone_offset.toInt(&ok);
+	if (!ok) {
+		std::cerr<<"Timezone offset is not an integer!"<<std::endl;
+		throw std::invalid_argument("invalid timezone offset passed");
+		return false;
+	}
 	
-	query.bindValue(0, user);     query.bindValue(1, date);     query.bindValue(2, start);
-	query.bindValue(3, time.toString("hh:mm:ss")); query.bindValue(4, location); query.bindValue(5, name);
-	query.bindValue(6, immutable);
+	query.bindValue(0, user); query.bindValue(1, date); query.bindValue(2, start);
+	query.bindValue(3, time.toString("hh:mm:ss")); query.bindValue(4, location);
+	query.bindValue(5, offset); query.bindValue(6, name);
+	query.bindValue(7, immutable);
 
 	if(!query.exec()) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
@@ -2045,7 +2054,7 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 	/* split along ':' characters */
 	QStringList separated= _p_text->split(":::");
 
-	if (separated.size() != 8) {
+	if (separated.size() != 9) {
 		/* invalid params => disconnect */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
@@ -2055,14 +2064,15 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 		return;
 	}
 
-	QString user     = separated[0];
-	QString pass     = separated[1];
-	QString date     = separated[2];
-	QString start    = separated[3];
-	QString duration = separated[4];
-	QString location = separated[5];
-	QString name     = separated[6];
-	QString mutble   = separated[7];
+	QString user      = separated[0];
+	QString pass      = separated[1];
+	QString date      = separated[2];
+	QString start     = separated[3];
+	QString duration  = separated[4];
+	QString location  = separated[5];
+	QString timezone  = separated[6];
+	QString name      = separated[7];
+	QString immutable = separated[8];
 
 	QString * msg;
 
@@ -2078,7 +2088,8 @@ void worker_node::request_personal_event(QString * _p_text, QTcpSocket * _p_sock
 			return;
 		} else if (!create_personal_event(user,     date,
 										  start,    duration,
-										  location, name, mutble)) {
+										  location, timezone,
+										  name, immutable)) {
 			msg = new QString("ERROR: FAILED TO CREATE EVENT\r\n");
 			m_p_mutex->lock();
 			served_client = true;
@@ -2106,7 +2117,7 @@ void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
 	/* split along ':' characters */
 	QStringList separated= _p_text->split(":::");
 
-	if (separated.size() != 8) {
+	if (separated.size() != 9) {
 		/* invalid params => disconnect */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
@@ -2123,7 +2134,8 @@ void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
 	QString start     = separated[4];
 	QString duration  = separated[5];
 	QString location  = separated[6];
-	QString name      = separated[7];
+	QString timezone  = separated[7];
+	QString name      = separated[8];
 	QString immutable = "0";
 	QString * msg;
 
@@ -2139,8 +2151,8 @@ void worker_node::request_group_event(QString * _p_text, QTcpSocket * _p_socket)
 			return;
 		} else if (!create_personal_event(group,    date,
 										  start,    duration,
-										  location, name,
-										  immutable)) {
+										  location, timezone,
+										  name,     immutable)) {
 			msg = new QString("ERROR: FAILED TO CREATE EVENT\r\n");
 			m_p_mutex->lock();
 			served_client = true;
