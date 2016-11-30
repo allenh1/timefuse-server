@@ -638,7 +638,7 @@ bool worker_node::get_account_info(const QString & user_name, QString * _msg) {
 	} else if (!user_name.size()) return false;
 
 	QSqlQuery query(m_db); 
-	query.prepare("SELECT email, cellphone FROM users WHERE user_name = ? LIMIT 1");
+	query.prepare("SELECT email, cellphone FROM users WHERE user_name = ?");
 	query.bindValue(0, user_name);
 	
 	if(!query.exec()) {
@@ -741,8 +741,8 @@ bool worker_node::username_exists(const QString & _user)
 	}
 
 	QSqlQuery * query = new QSqlQuery(m_db);
-	QString text = "SELECT DISTINCT count(*) FROM users WHERE user_name = '"
-		+ _user + "' LIMIT 1;";
+	QString text = "SELECT * FROM users WHERE user_name = '"
+		+ _user + "';";
 
 	if (!query->exec(text)) {
 		std::cerr<<"Query failed to execute!"<<std::endl;
@@ -769,7 +769,7 @@ bool worker_node::reset_password(QString & _p_user,
 				 && _p_email.size()
 				 && _p_new_psswd.size())) return false;
 	QSqlQuery q(m_db);
-	q.prepare("SELECT DISTINCT email FROM users WHERE user_name = ? LIMIT 1");
+	q.prepare("SELECT DISTINCT email FROM users WHERE user_name = ?");
 	q.bindValue(0, _p_user);
 
 	if(!q.exec()) {
@@ -813,7 +813,7 @@ bool worker_node::select_schedule_id(user & u)
 	QSqlQuery * query = new QSqlQuery(m_db);
    
 	QString schedule_select = "SELECT DISTINCT schedule_id FROM schedules WHERE ";
-	schedule_select += "owner = '" + u.get_username() + "' LIMIT 1;";
+	schedule_select += "owner = '" + u.get_username() + "';";
 
 	if (!query->exec(schedule_select)) {
 		std::cerr<<"Query failed to execute!"<<std::endl;
@@ -841,7 +841,7 @@ bool worker_node::select_user(user & u) {
     QSqlQuery * query = new QSqlQuery(m_db);
    
 	QString user_stuff = "SELECT DISTINCT user_id, schedule_id, email, cellphone FROM users WHERE ";
-	user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "' LIMIT 1;";
+	user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
 
 	if(!query->exec(user_stuff)) {
 		std::cerr<<"Query Failed to execute!"<<std::endl;
@@ -961,7 +961,7 @@ bool worker_node::user_in_group(
 				  "groups WHERE users.user_id = user_group_relation.user_id "
 				  "AND groups.group_id = user_group_relation.group_id "
 				  "AND users.user_name = ? "
-				  "AND groups.group_name = ? LIMIT 1");	
+				  "AND groups.group_name = ?");	
 	query.bindValue(0, user);     query.bindValue(1, group);
 	
 	if(!query.exec()) {
