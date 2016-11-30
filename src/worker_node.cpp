@@ -447,14 +447,14 @@ bool worker_node::suggest_user_events(const QString & owner,
 	} else if (!owner.size()) return false;
 
 	/* what day even is it? */
-	QString start_date = QDateTime::currentDateTime().toString("YYYY-M-d");
+	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
 	
 	QSqlQuery query(m_db);
 	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
-								 "schedule_item.duration, FROM schedule_item, schedules "
-								 "WHERE schedules.owner = '") + owner + "'"
-		+ "AND schedule_item.date >= '" + start_date + "'"
-		+ "AND schedule_item.date <= '" + deadline_date + "'"
+								 "schedule_item.duration FROM schedule_item, schedules "
+								 "WHERE schedules.owner = '") + owner + "' "
+		+ "AND schedule_item.date >= '" + start_date + "' "
+		+ "AND schedule_item.date <= '" + deadline_date + "' "
 		+ "AND schedule_item.schedule_id = schedules.schedule_id;";
 	query.prepare(query_text);
 
@@ -489,7 +489,7 @@ bool worker_node::suggest_user_events(const QString & owner,
 		events.push_back(curr);
 	} /* add the deadline */
 	calendar_event deadline;
-	deadline.date = QDate::fromString(deadline_date, "YYYY-M-d");
+	deadline.date = QDate::fromString(deadline_date, "yyyy-M-d");
 	deadline.time = QTime::fromString(deadline_time, "hh:mm");
 	/* we don't care about the duration of the deadline */
 	events.push_back(deadline); int len = duration.toInt();
@@ -515,7 +515,7 @@ bool worker_node::suggest_user_events(const QString & owner,
 	}
 
 	for (int x = 0; x < scheduled_times.size(); ++x) {
-		*_msg += scheduled_times[x].date.toString("YYYY-M-d") + ":::"
+		*_msg += scheduled_times[x].date.toString("yyyy-M-d") + ":::"
 			+ scheduled_times[x].time.toString("hh:mm") + "\n";		
 	} return true;
 }									  
@@ -2681,7 +2681,7 @@ void worker_node::request_suggest_user_times(QString * _p_text, QTcpSocket * _p_
 	/* split along ':' characters */
 	QStringList separated= _p_text->split(":::");
 
-	if (separated.size() != 4) {
+	if (separated.size() != 5) {
 		/* invalid params => disconnect */
 		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
 		m_p_mutex->lock();
