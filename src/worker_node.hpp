@@ -13,6 +13,7 @@
 #include "user.hpp"
 #include "tcp_comm.hpp"
 #include "tcp_thread.hpp"
+#include "event_struct.hpp"
 #include "thread_init_exception.hpp"
 #include "worker_connection_state.hpp"
 
@@ -81,6 +82,11 @@ public:
 									   const quint8 &,
 									   const quint16 &,
 									   QString *);
+	Q_SLOT bool suggest_user_events(const QString &,
+									const QString &,
+									const QString &,
+									const QString &,
+									QString * _msg);
 	bool reset_password(QString & _p_user, QString & _p_email,
 						QString & _p_new_psswd);
 
@@ -136,7 +142,7 @@ public:
 	Q_SLOT void request_create_friendship(QString * _p_text,
 										  QTcpSocket * _p_socket);
 	Q_SLOT void request_accept_friend(QString * _p_text,
-								   QTcpSocket * _p_socket);
+									  QTcpSocket * _p_socket);
 	Q_SLOT void request_friends(QString * _p_text,
 								QTcpSocket * _p_socket);
 	Q_SLOT void request_delete_friend(QString * _p_text,
@@ -146,7 +152,9 @@ public:
 	Q_SLOT void request_absent(QString * _p_text,
 							   QTcpSocket * _p_socket);
 	Q_SLOT void request_present(QString * _p_text,
-							   QTcpSocket * _p_socket);
+								QTcpSocket * _p_socket);
+	Q_SLOT void request_suggest_user_times(QString * _p_text,
+										   QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    

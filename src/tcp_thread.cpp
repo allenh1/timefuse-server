@@ -243,6 +243,11 @@ void tcp_thread::readFromClient()
 			text.replace("PRESENT ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_present(temp, pClientSocket));
+		} else if (text.contains("SUGGEST_TIMES ")) {
+			std::cout<<"request time suggestions"<<std::endl;
+			text.replace("SUGGEST_TIMES ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_suggest_user_time(temp, pClientSocket));
 		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 	}
 }

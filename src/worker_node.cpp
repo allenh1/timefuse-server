@@ -117,6 +117,10 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_present,
 			this, &worker_node::request_present,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_suggest_user_time,
+			this, &worker_node::request_suggest_user_times,
+			Qt::DirectConnection);
+
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -430,6 +434,92 @@ bool worker_node::list_user_events(const QString & owner,
 	return true;
 }
 
+bool worker_node::suggest_user_events(const QString & owner,
+									  const QString & deadline_date,
+									  const QString & deadline_time,
+									  const QString & duration,
+									  QString * _msg)
+{
+	/* buckle the fuck up */
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		return false;
+	} else if (!owner.size()) return false;
+
+	/* what day even is it? */
+	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
+	
+	QSqlQuery query(m_db);
+	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
+								 "schedule_item.duration FROM schedule_item, schedules "
+								 "WHERE schedules.owner = '") + owner + "' "
+		+ "AND schedule_item.date >= '" + start_date + "' "
+		+ "AND schedule_item.date <= '" + deadline_date + "' "
+		+ "AND schedule_item.schedule_id = schedules.schedule_id;";
+	query.prepare(query_text);
+
+	/* I suppose we can just as for those days then? */
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	} else if (!query.size()) {
+		*_msg += "\n";
+		return true;
+	}
+
+	/* iterate through the returned dates, getting fucked accordingly. */
+	QList<calendar_event> events, scheduled_times;
+	/* push the current date */
+	calendar_event current_time;
+	current_time.date = QDateTime::currentDateTime().date();
+	current_time.time = QDateTime::currentDateTime().time();
+	current_time.duration = 0;
+	events.push_back(current_time);
+
+	for (; query.next();) {
+		calendar_event curr;
+		curr.date = query.value(0).toDate();
+		curr.time = query.value(1).toTime();
+
+		QTime temp = query.value(2).toTime();
+		/* extract minute duration from time */
+		curr.duration = temp.hour() * 60 + temp.minute();
+		events.push_back(curr);
+	} /* add the deadline */
+	calendar_event deadline;
+	deadline.date = QDate::fromString(deadline_date, "yyyy-M-d");
+	deadline.time = QTime::fromString(deadline_time, "hh:mm");
+	/* we don't care about the duration of the deadline */
+	events.push_back(deadline); int len = duration.toInt();
+
+	/* find the working times */
+	for (int x = 0; x < events.size() - 1; ++x) {
+		bool ok;
+		calendar_event c = schedule_between(events[x], events[x + 1], len, &ok);
+
+		if (!ok) continue;
+
+		/**
+		 * @todo check that the hour is not absurd.
+		 */
+
+		scheduled_times.push_back(c);
+	}
+
+    /* write back the request */
+	if (!scheduled_times.size()) {
+		*_msg = "\n";
+		return true;
+	}
+
+	for (int x = 0; x < scheduled_times.size(); ++x) {
+		*_msg += scheduled_times[x].date.toString("yyyy-M-d") + ":::"
+			+ scheduled_times[x].time.toString("hh:mm") + "\n";		
+	} return true;
+}									  
+
 bool worker_node::list_user_month_events(const QString & owner,
 										 const quint8 & month,
 										 const quint16 & year,
@@ -679,7 +769,7 @@ bool worker_node::reset_password(QString & _p_user,
 				 && _p_email.size()
 				 && _p_new_psswd.size())) return false;
 	QSqlQuery q(m_db);
-	q.prepare("SELECT email FROM users WHERE user_name = ?");
+	q.prepare("SELECT DISTINCT email FROM users WHERE user_name = ?");
 	q.bindValue(0, _p_user);
 
 	if(!q.exec()) {
@@ -722,7 +812,7 @@ bool worker_node::select_schedule_id(user & u)
 
 	QSqlQuery * query = new QSqlQuery(m_db);
    
-	QString schedule_select = "SELECT schedule_id FROM schedules WHERE ";
+	QString schedule_select = "SELECT DISTINCT schedule_id FROM schedules WHERE ";
 	schedule_select += "owner = '" + u.get_username() + "';";
 
 	if (!query->exec(schedule_select)) {
@@ -750,7 +840,7 @@ bool worker_node::select_user(user & u) {
 
     QSqlQuery * query = new QSqlQuery(m_db);
    
-	QString user_stuff = "SELECT user_id, schedule_id, email, cellphone FROM users WHERE ";
+	QString user_stuff = "SELECT DISTINCT user_id, schedule_id, email, cellphone FROM users WHERE ";
 	user_stuff += "user_name = '" + u.get_username() + "' AND passwd = '" + u.get_password() + "';";
 
 	if(!query->exec(user_stuff)) {
@@ -2565,6 +2655,63 @@ void worker_node::request_group_month_events(QString * _p_text, QTcpSocket * _p_
 			return;
 		} else if (!list_user_month_events(group, month, year, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO FETCH GROUP EVENTS\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_suggest_user_times(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request suggest user times: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":::");
+
+	if (separated.size() != 5) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user      = separated[0];
+	QString pass      = separated[1];
+	QString stop_day  = separated[2];
+	QString stop_time = separated[3];
+	QString duration  = separated[4];	
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!suggest_user_events(user, stop_day, stop_time,
+										duration, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO ESTIMATE EVENTS\r\n");
 			m_p_mutex->lock();
 			served_client = true;
 			m_p_mutex->unlock();
