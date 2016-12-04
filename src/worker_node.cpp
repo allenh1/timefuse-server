@@ -4,19 +4,15 @@ worker_node::worker_node(const QString & _host, const quint16 & _port, QObject *
 	: QObject(_p_parent),
 	  m_host(_host),
 	  m_port(_port),
-	  m_p_mutex(new QMutex())
-{
-	/**
-	 * @todo verify nothing else needs to be done here.
-	 */
-	m_db = setup_db();
-}
+	  m_db(setup_db()),
+	  m_p_mutex(new QMutex())	  
+{ /* constructor */ }
 
 worker_node::~worker_node()
 {
-	/**
-	 * @todo nothing to be done as of right now
-	 */
+    delete m_p_mutex;
+	delete m_p_tcp_thread;
+	delete m_p_thread;
 }
 
 bool worker_node::init()
@@ -476,9 +472,6 @@ bool worker_node::suggest_user_events(const QString & owner,
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
 		throw std::invalid_argument("failed to query the user's groups");
 		return false;
-	} else if (!query.size()) {
-		*_msg += "\n";
-		return true;
 	}
 
 	/* iterate through the returned dates, getting fucked accordingly. */
@@ -1118,7 +1111,7 @@ bool worker_node::friends(const QString & _user, QString * _msg) {
 }
 
 bool worker_node::friend_requests(const QString & _user, QString * _msg) {
-     if(!m_db.open()) {
+	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
 		return false;
 	} else if (_user.size()==0) return false;
@@ -1395,7 +1388,7 @@ void worker_node::request_absent(QString * _p_text,
 }
 
 void worker_node::request_present(QString * _p_text,
-								 QTcpSocket * _p_socket) {
+								  QTcpSocket * _p_socket) {
 	std::cout<<"create friendship request: \""<<
 		_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
@@ -1556,7 +1549,7 @@ void worker_node::request_create_friendship(QString * _p_text,
 }
 
 void worker_node::request_friends(QString * _p_text,
-										QTcpSocket * _p_socket) {
+								  QTcpSocket * _p_socket) {
 	std::cout<<"friends request: \""<<
 		_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
@@ -1663,7 +1656,7 @@ void worker_node::request_delete_friend(QString * _p_text,
 }
 
 void worker_node::request_friend_requests(QString * _p_text,
-										QTcpSocket * _p_socket) {
+										  QTcpSocket * _p_socket) {
 	std::cout<<"friend requests: \""<<
 		_p_text->toStdString()<<"\""<<std::endl;
 	/* create a tcp_connection object */
