@@ -53,7 +53,7 @@ void tcp_thread::disconnected()
 	if (m_master_mode) {
 		tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
 		Q_EMIT(dropped_connection(to_dequeue));
-	}
+	} else Q_EMIT(dropped_client());
 	std::cout<< "Client "<< QHostAddress(quitter->peerAddress().toIPv4Address()).toString().toStdString();
 	std::cout<<":" << quitter->peerPort();
 	std::cout<< " has left the server." << std::endl;
@@ -248,7 +248,12 @@ void tcp_thread::readFromClient()
 			text.replace("SUGGEST_TIMES ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_suggest_user_time(temp, pClientSocket));
-		} else std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
+		} else {
+			std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
+			QString * msg = new QString("ERROR: INVALID COMMAND\r\n");
+			QString client_host = pClientSocket->peerName();
+			disconnect_client(new tcp_connection(client_host, pClientSocket), msg);
+		}
 	}
 }
 

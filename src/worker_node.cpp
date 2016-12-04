@@ -120,7 +120,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::got_suggest_user_time,
 			this, &worker_node::request_suggest_user_times,
 			Qt::DirectConnection);
-
+	connect(m_p_tcp_thread, &tcp_thread::dropped_client,
+			this, &worker_node::handle_client_disconnect,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -231,6 +233,16 @@ QSqlDatabase worker_node::setup_db() {
 	db.setUserName(user); db.setPassword(pwd);
 	db.setPort(port);
 	return db;
+}
+
+/** 
+ * Handle an unexpected client disconnect.
+ */
+void worker_node::handle_client_disconnect()
+{
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
 }
 
 /**

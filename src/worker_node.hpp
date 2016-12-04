@@ -87,6 +87,8 @@ public:
 									const QString &,
 									const QString &,
 									QString * _msg);
+	Q_SLOT void handle_client_disconnect();
+
 	bool reset_password(QString & _p_user, QString & _p_email,
 						QString & _p_new_psswd);
 
