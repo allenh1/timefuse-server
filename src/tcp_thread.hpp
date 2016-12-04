@@ -61,10 +61,13 @@ public:
 	Q_SIGNAL void got_present(QString *, QTcpSocket *);
 	Q_SIGNAL void got_absent(QString *, QTcpSocket *);
 	Q_SIGNAL void got_suggest_user_time(QString *, QTcpSocket *);
+
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);
+
 	Q_SIGNAL void dropped_connection(tcp_connection *);
-	
+	Q_SIGNAL void dropped_client();
+
 	Q_SLOT void echoReceived(QString);
 
 	int queueDepth() {

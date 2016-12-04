@@ -53,7 +53,7 @@ void tcp_thread::disconnected()
 	if (m_master_mode) {
 		tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
 		Q_EMIT(dropped_connection(to_dequeue));
-	}
+	} else Q_EMIT(dropped_client());
 	std::cout<< "Client "<< QHostAddress(quitter->peerAddress().toIPv4Address()).toString().toStdString();
 	std::cout<<":" << quitter->peerPort();
 	std::cout<< " has left the server." << std::endl;
