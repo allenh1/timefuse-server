@@ -620,12 +620,16 @@ bool worker_node::suggest_group_events(const QString & owner,
 	}
 
 	QStringList users = p_users->split("\n");
+	QString empty = ""; users.removeAll(empty);
+
+	/* free p_users, as it is no longer needed */
+	delete p_users;
+	
 	for (int x = 0; x < users.size(); ++x) {
 		/* grab the current user's events */
 		QSet<calendar_event> suggestions;
-		suggestions = suggest_event_times(owner, deadline_date,
+		suggestions = suggest_event_times(users[x], deadline_date,
 										  deadline_time, duration);
-
 		/**
 		 * Union the user's free times with the current
 		 * group pool. We don't intersect here, since
@@ -2930,7 +2934,7 @@ void worker_node::request_suggest_group_times(QString * _p_text, QTcpSocket * _p
 			Q_EMIT(disconnect_client(p, msg));
 			delete _p_text;
 			return;
-		} else if (!suggest_group_events(user, stop_day, stop_time,
+		} else if (!suggest_group_events(group, stop_day, stop_time,
 										 duration, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO ESTIMATE EVENTS\r\n");
 			m_p_mutex->lock();
@@ -2940,6 +2944,9 @@ void worker_node::request_suggest_group_times(QString * _p_text, QTcpSocket * _p
 			delete _p_text;
 			return;
 		}
+	} catch (std::invalid_argument e) {
+		msg = new QString(e.what());
+		*msg = QString("ERROR: Exception was thrown: \"") + *msg + "\"\r\n";
 	} catch ( ... ) {
 		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
 	} Q_EMIT(disconnect_client(p, msg));
