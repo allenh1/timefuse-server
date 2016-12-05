@@ -442,17 +442,20 @@ bool worker_node::list_user_events(const QString & owner,
 	return true;
 }
 
-bool worker_node::suggest_user_events(const QString & owner,
-									  const QString & deadline_date,
-									  const QString & deadline_time,
-									  const QString & duration,
-									  QString * _msg)
+QSet<calendar_event> worker_node::suggest_event_times(const QString & owner,
+													  const QString & deadline_date,
+													  const QString & deadline_time,
+													  const QString & duration)
 {
 	/* buckle the fuck up */
 	if(!m_db.open()) {
 		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
-		return false;
-	} else if (!owner.size()) return false;
+		throw std::invalid_argument("failed to find the database");
+		QSet<calendar_event> rip; return rip;
+	} else if (!owner.size()) {
+		throw std::invalid_argument("empty owner string");
+		QSet<calendar_event> rip; return rip;
+	} QSet<calendar_event> times;
 
 	/* what day even is it? */
 	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
@@ -471,17 +474,17 @@ bool worker_node::suggest_user_events(const QString & owner,
 		std::cerr<<"Query Failed to execute!"<<std::endl;
 		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
 		throw std::invalid_argument("failed to query the user's groups");
-		return false;
+		QSet<calendar_event> rip; return rip;
 	}
 
 	/* iterate through the returned dates, getting fucked accordingly. */
-	QList<calendar_event> events, scheduled_times;
+	QSet<calendar_event> events, scheduled_times;
 	/* push the current date */
 	calendar_event current_time;
 	current_time.date = QDateTime::currentDateTime().date();
 	current_time.time = QDateTime::currentDateTime().time();
 	current_time.duration = 0;
-	events.push_back(current_time);
+	events.insert(current_time);
 
 	for (; query.next();) {
 		calendar_event curr;
@@ -491,37 +494,103 @@ bool worker_node::suggest_user_events(const QString & owner,
 		QTime temp = query.value(2).toTime();
 		/* extract minute duration from time */
 		curr.duration = temp.hour() * 60 + temp.minute();
-		events.push_back(curr);
+		events.insert(curr);
 	} /* add the deadline */
 	calendar_event deadline;
 	deadline.date = QDate::fromString(deadline_date, "yyyy-M-d");
 	deadline.time = QTime::fromString(deadline_time, "hh:mm");
 	/* we don't care about the duration of the deadline */
-	events.push_back(deadline); int len = duration.toInt();
+	events.insert(deadline); int len = duration.toInt();
 
+	/**
+	 * @todo verify the deadline is not occupied,
+	 * and, if it is, backtrack to the first
+	 * free slot that can hold our event.
+	 */
+
+	QList<calendar_event> temp = events.toList();
 	/* find the working times */
 	for (int x = 0; x < events.size() - 1; ++x) {
 		bool ok;
-		calendar_event c = schedule_between(events[x], events[x + 1], len, &ok);
+		calendar_event c = schedule_between(temp, x, x + 1, len, &ok);
 
-		if (!ok) continue;
+		if (!ok) continue; /* don't insert if you didn't find a time */
 
 		/**
 		 * @todo check that the hour is not absurd.
 		 */
 
-		scheduled_times.push_back(c);
+		times.insert(c);
+	} return times;
+}
+
+bool worker_node::is_valid_for_user(const QString & owner,
+									const calendar_event & event)
+{
+	if(!m_db.open()) {
+		std::cerr<<"Error! Failed to open database connection!"<<std::endl;
+		throw std::invalid_argument("failed to find the database");
+		return false;
+	} else if (!owner.size()) {
+		throw std::invalid_argument("empty owner string");
+		return false;
 	}
 
+	/* what day even is it? */
+	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
+	
+	QSqlQuery query(m_db);
+	/**
+	 * It might be wise to have an end date, but... I mean...
+	 * I don't plan that far ahead... So... We'll wait for the report ;)
+	 */
+	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
+								 "schedule_item.duration FROM schedule_item, schedules "
+								 "WHERE schedules.owner = '") + owner + "' "
+		+ "AND schedule_item.date >= '" + start_date + "' "
+		+ "AND schedule_item.schedule_id = schedules.schedule_id;";
+	query.prepare(query_text);
+
+	if(!query.exec()) {
+		std::cerr<<"Query Failed to execute!"<<std::endl;
+		std::cerr<<"query: \""<<query.lastQuery().toStdString()<<"\""<<std::endl;	
+		throw std::invalid_argument("failed to query the user's groups");
+		return false;
+	}
+
+	for (; query.next();) {
+		calendar_event curr;
+		curr.date = query.value(0).toDate();
+		curr.time = query.value(1).toTime();
+
+		QTime temp = query.value(2).toTime();
+		/* extract minute duration from time */
+		curr.duration = temp.hour() * 60 + temp.minute();
+
+		/* return false if events overlap */
+		if (check_overlap(event, curr)) return false;
+	} return true;
+}
+
+bool worker_node::suggest_user_events(const QString & owner,
+									  const QString & deadline_date,
+									  const QString & deadline_time,
+									  const QString & duration,
+									  QString * _msg)
+{
+	QSet<calendar_event> suggestions;
+	suggestions = suggest_event_times(owner, deadline_date,
+									  deadline_time, duration);
     /* write back the request */
-	if (!scheduled_times.size()) {
+	if (!suggestions.size()) {
 		*_msg = "\n";
 		return true;
 	}
 
-	for (int x = 0; x < scheduled_times.size(); ++x) {
-		*_msg += scheduled_times[x].date.toString("yyyy-M-d") + ":::"
-			+ scheduled_times[x].time.toString("hh:mm") + "\n";		
+	QList<calendar_event> times = suggestions.values();
+	for (int x = 0; x < times.size(); ++x) {
+		*_msg += times[x].date.toString("yyyy-M-d") + ":::"
+			+ times[x].time.toString("hh:mm") + "\n";		
 	} return true;
 }									  
 

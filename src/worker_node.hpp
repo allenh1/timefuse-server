@@ -39,6 +39,10 @@ public:
 	bool user_in_group(const QString & _user,
 					   const QString & _group);
 	bool group_exists(const QString & _group);
+	bool is_valid_for_user(const QString &,
+						   const calendar_event &);
+	QSet<calendar_event> suggest_event_times(const QString &, const QString &,
+											 const QString &, const QString &);
 
 	Q_SIGNAL void established_client_connection();
 	Q_SIGNAL void finished_client_job();

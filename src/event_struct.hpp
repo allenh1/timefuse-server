@@ -2,6 +2,7 @@
 #define __EVENT_STRUCT_HPP__
 #include <QDate>
 #include <QTime>
+#include <QSet>
 
 struct calendar_event
 {
@@ -12,12 +13,53 @@ struct calendar_event
 	calendar_event get_midpoint(const calendar_event & e1,
 								const calendar_event & e2);
 
+	QTime get_finish_time() {
+		QTime ret = time;
+		return ret.addSecs(duration * 60);
+	}
+
 	bool operator < (const calendar_event & e) {
 		return date < e.date && time < e.time;
 	}
+
+	bool operator == (const calendar_event & e) {
+		return date == e.date && time == e.time;
+	}
 };
 
-calendar_event schedule_between(const calendar_event & e1,
-								const calendar_event & e2,
-								const int & d, bool * ok = NULL);
+calendar_event schedule_between(const QList<calendar_event> & events,
+								const size_t & index_1,
+								const size_t & index_2,
+								const int & d, bool * ok);
+
+bool check_overlap(calendar_event e1,
+				   calendar_event e2);
+
+/** 
+ * Equal to operator for calendar events.
+ * 
+ * Was QSet really worth it?
+ *
+ * @param e1 first event
+ * @param e2 second event
+ * 
+ * @return True if the two events start at the same time.
+ */
+inline bool operator == (const calendar_event & e1,
+						 const calendar_event & e2)
+{ return e1.date == e2.date && e1.time == e2.time; }
+
+/** 
+ * Overloaded qHash function for a calendar_event.
+ * 
+ * @param e Event to hash.
+ * @param seed Idk. Maybe it's gonna be a tree.
+ * 
+ * @return Whatever qHash usually returns?
+ */
+inline uint qHash(const calendar_event & e, uint seed) {
+	return qHash(e.date.toString("yyyy-M-d"), seed) ^
+		qHash(e.time.toString("hh:mm"), seed) ^
+		qHash(e.duration, seed);
+}
 #endif
