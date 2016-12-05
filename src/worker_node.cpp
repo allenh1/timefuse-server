@@ -649,10 +649,10 @@ bool worker_node::suggest_group_events(const QString & owner,
 	 * Next we iterate through the group times set, removing
 	 * times that do not work for ALL group members.
 	 */
-	QSet<calendar_event>::iterator i;
+	QList<calendar_event> temp = group_times.toList();
 	for (int x = 0; x < users.size(); ++x) {
-		for (i = group_times.begin(); i != group_times.end(); ++i) {
-			if (!is_valid_for_user(users[x], *i)) group_times -= *i;
+		for (int y = 0; y < temp.size(); ++y) {
+			if (!is_valid_for_user(users[x], temp[y])) group_times -= temp[y];
 		}
 	}
 	
@@ -663,6 +663,7 @@ bool worker_node::suggest_group_events(const QString & owner,
 	}
 
 	/* return the list of times that work for everyone */
+	QSet<calendar_event>::iterator i;
 	for (i = group_times.begin(); i != group_times.end(); ++i) {
 		*_msg += i->date.toString("yyyy-M-d") + ":::"
 			+ i->time.toString("hh:mm") + "\n";		
