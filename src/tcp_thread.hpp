@@ -61,6 +61,7 @@ public:
 	Q_SIGNAL void got_present(QString *, QTcpSocket *);
 	Q_SIGNAL void got_absent(QString *, QTcpSocket *);
 	Q_SIGNAL void got_suggest_user_time(QString *, QTcpSocket *);
+	Q_SIGNAL void got_suggest_group_times(QString *, QTcpSocket *);
 
 	Q_SIGNAL void worker_connected(worker_connection * _worker);
 	Q_SIGNAL void client_connected(client_connection * _client);

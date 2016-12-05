@@ -91,6 +91,11 @@ public:
 									const QString &,
 									const QString &,
 									QString * _msg);
+	Q_SLOT bool suggest_group_events(const QString &,
+									 const QString &,
+									 const QString &,
+									 const QString &,
+									 QString * _msg);
 	Q_SLOT void handle_client_disconnect();
 
 	bool reset_password(QString & _p_user, QString & _p_email,
@@ -161,6 +166,8 @@ public:
 								QTcpSocket * _p_socket);
 	Q_SLOT void request_suggest_user_times(QString * _p_text,
 										   QTcpSocket * _p_socket);
+	Q_SLOT void request_suggest_group_times(QString * _p_text,
+											QTcpSocket * _p_socket);
 private:
 	volatile bool m_continue = true;
    

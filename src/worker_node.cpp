@@ -119,6 +119,9 @@ bool worker_node::init()
 	connect(m_p_tcp_thread, &tcp_thread::dropped_client,
 			this, &worker_node::handle_client_disconnect,
 			Qt::DirectConnection);
+	connect(m_p_tcp_thread, &tcp_thread::got_suggest_group_times,
+			this, &worker_node::request_suggest_group_times,
+			Qt::DirectConnection);
     /* start the thread */
 	m_p_thread->start();
 	return m_p_thread->isRunning();
@@ -591,6 +594,74 @@ bool worker_node::suggest_user_events(const QString & owner,
 	for (int x = 0; x < times.size(); ++x) {
 		*_msg += times[x].date.toString("yyyy-M-d") + ":::"
 			+ times[x].time.toString("hh:mm") + "\n";		
+	} return true;
+}									  
+
+bool worker_node::suggest_group_events(const QString & owner,
+									   const QString & deadline_date,
+									   const QString & deadline_time,
+									   const QString & duration,
+									   QString * _msg)
+{	
+	QSet<calendar_event> group_times;
+	QString * p_users; /* @todo delete me! */
+
+	/**
+	 * First, obtain a list of all users in the group.
+	 * Should probably just do the damn query, but...
+	 * I already wrote it down there and I'm lazy.
+	 */
+	if (!list_group_users(owner, p_users = new QString())) {
+		/* if this fails, something is pretty messed up... */
+		*_msg = "Please tell Hunter that\n"
+			"the thing he thought wouldn't\n"
+			"happen happened...\n";
+		return true;
+	}
+
+	QStringList users = p_users->split("\n");
+	for (int x = 0; x < users.size(); ++x) {
+		/* grab the current user's events */
+		QSet<calendar_event> suggestions;
+		suggestions = suggest_event_times(owner, deadline_date,
+										  deadline_time, duration);
+
+		/**
+		 * Union the user's free times with the current
+		 * group pool. We don't intersect here, since
+		 * the suggested times we received for each user
+		 * is not a complete list... It's only a mere
+		 * approximation.
+		 *
+		 * P.S. Why the fuck is "|=" the union operator?
+		 * Also, why is the union function called unite?
+		 *
+		 * Come on, Qt...
+		 */
+		group_times |= suggestions;
+	}
+
+	/**
+	 * Next we iterate through the group times set, removing
+	 * times that do not work for ALL group members.
+	 */
+	QSet<calendar_event>::iterator i;
+	for (int x = 0; x < users.size(); ++x) {
+		for (i = group_times.begin(); i != group_times.end(); ++i) {
+			if (!is_valid_for_user(users[x], *i)) group_times -= *i;
+		}
+	}
+	
+    /* write back the request */
+	if (!group_times.size()) {
+		*_msg = "\n";
+		return true;
+	}
+
+	/* return the list of times that work for everyone */
+	for (i = group_times.begin(); i != group_times.end(); ++i) {
+		*_msg += i->date.toString("yyyy-M-d") + ":::"
+			+ i->time.toString("hh:mm") + "\n";		
 	} return true;
 }									  
 
@@ -2785,6 +2856,82 @@ void worker_node::request_suggest_user_times(QString * _p_text, QTcpSocket * _p_
 			return;
 		} else if (!suggest_user_events(user, stop_day, stop_time,
 										duration, msg = new QString())) {
+			msg = new QString("ERROR: FAILED TO ESTIMATE EVENTS\r\n");
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		}
+	} catch ( ... ) {
+		msg = new QString("ERROR: DB COMMUNICATION FAILED\r\n");		
+	} Q_EMIT(disconnect_client(p, msg));
+	m_p_mutex->lock();
+	served_client = true;
+	m_p_mutex->unlock();
+	delete _p_text;
+}
+
+void worker_node::request_suggest_group_times(QString * _p_text, QTcpSocket * _p_socket)
+{
+	std::cout<<"request suggest group times: \""<<_p_text->toStdString()<<"\""<<std::endl;
+	/* create a tcp_connection object */
+	QString client_host = _p_socket->peerName();
+	tcp_connection * p = new tcp_connection(client_host, _p_socket);
+
+	/* split along ':' characters */
+	QStringList separated= _p_text->split(":::");
+
+	if (separated.size() != 6) {
+		/* invalid params => disconnect */
+		QString * msg = new QString("ERROR: INVALID REQUEST\r\n");
+		m_p_mutex->lock();
+		served_client = true;
+		m_p_mutex->unlock();
+		Q_EMIT(disconnect_client(p, msg));
+		return;
+	}
+
+	QString user      = separated[0];
+	QString pass      = separated[1];
+	QString group     = separated[2];
+	QString stop_day  = separated[3];
+	QString stop_time = separated[4];
+	QString duration  = separated[5];	
+
+	QString * msg;
+
+	try {
+		if (!try_login(user, pass)) {
+			std::cerr<<"Authentication Error"<<std::endl;
+			msg = new QString("ERROR: AUTHENTICATION FAILED\r\n");
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			return;
+		} else if (!group_exists(group)) {
+			msg = new QString("ERROR: GROUP ");
+			*msg += "\"" + group + "\" DOES NOT EXIST\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else if (!user_in_group(user, group)) {
+			msg = new QString("ERROR: USER ");
+			*msg += "\"" + user + "\" IS NOT IN GROUP \"" + group + "\"\r\n";
+			m_p_mutex->lock();
+			served_client = true;
+			m_p_mutex->unlock();
+			Q_EMIT(disconnect_client(p, msg));
+			delete _p_text;
+			return;
+		} else if (!suggest_group_events(user, stop_day, stop_time,
+										 duration, msg = new QString())) {
 			msg = new QString("ERROR: FAILED TO ESTIMATE EVENTS\r\n");
 			m_p_mutex->lock();
 			served_client = true;

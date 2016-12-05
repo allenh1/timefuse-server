@@ -248,6 +248,11 @@ void tcp_thread::readFromClient()
 			text.replace("SUGGEST_TIMES ", "");
 			QString * temp = new QString(text);
 			Q_EMIT(got_suggest_user_time(temp, pClientSocket));
+		} else if (text.contains("REQUEST_TIMES ")) {
+			std::cout<<"request group time suggestions"<<std::endl;
+			text.replace("REQUEST_TIMES ", "");
+			QString * temp = new QString(text);
+			Q_EMIT(got_suggest_group_times(temp, pClientSocket));
 		} else {
 			std::cout<<"client request: \""<<text.toStdString()<<"\""<<std::endl;
 			QString * msg = new QString("ERROR: INVALID COMMAND\r\n");
