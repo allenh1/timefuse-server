@@ -12,6 +12,7 @@
 #include "client_connection.hpp"
 #include "master_node.hpp"
 #include "worker_node.hpp"
+#include "tcp_timer.hpp"
 
 class master_node;
 class worker_node;
@@ -70,6 +71,7 @@ public:
 	Q_SIGNAL void dropped_client();
 
 	Q_SLOT void echoReceived(QString);
+	Q_SLOT void timeout_disconnect();
 
 	int queueDepth() {
 		QMutex * pMutex = new QMutex();
@@ -112,6 +114,7 @@ private:
 	master_node * m_p_master_node;
 	worker_node * m_p_worker_node;
 
+	QTcpSocket * currentSocket = NULL;
 	QQueue<tcp_connection> * m_pTcpMessages;
 	QList<tcp_connection*> m_tcp_connections;
 };

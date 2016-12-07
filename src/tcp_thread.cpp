@@ -64,6 +64,13 @@ void tcp_thread::acceptConnection()
 	QTcpSocket * client = m_pServer->nextPendingConnection();
 
 	if (client) {
+		if (!m_master_mode) {
+			tcp_timer * t = new tcp_timer(); currentSocket = client;
+			std::cerr<<"starting timer thread..."<<std::endl;
+			connect(t, &tcp_timer::timeout, this, &tcp_thread::timeout_disconnect,
+					Qt::DirectConnection);
+			if (!t->init()) std::cerr<<"WARNING: failed to construct timeout thread!"<<std::endl;
+		}
 		connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
 		connect(client, &QAbstractSocket::disconnected, this, &tcp_thread::disconnected);
 		connect(client, &QIODevice::readyRead, this, &tcp_thread::readFromClient);
@@ -75,14 +82,24 @@ void tcp_thread::echoReceived(QString msg)
 	std::cout<<"I read \""<<msg.toStdString()<<"\" from the client!"<<std::endl;
 }
 
+void tcp_thread::timeout_disconnect()
+{
+	try {
+		std::cout<<"Ok... Bye?"<<std::endl;
+		QString * msg = new QString("ERROR: TIMEOUT\r\n");
+		QString client_host = currentSocket->peerName();
+		disconnect_client(new tcp_connection(client_host, currentSocket), msg);
+	} catch ( ... ) { }
+}
+
 void tcp_thread::readFromClient()
 {
 	//! Points at the thing that called this member function,
 	//! as well as casts it it a QTcpSocket.
 	QTcpSocket * pClientSocket = qobject_cast<QTcpSocket *>(sender());
-   
 	QString text;/* to store the message */
-
+	currentSocket = pClientSocket;
+	
 	QByteArray bae = pClientSocket->readLine();
 	QString temp = QString(bae);
 	QString hostname = pClientSocket->peerName();

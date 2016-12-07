@@ -8,6 +8,7 @@ SOURCES += src/main.cpp \
 		   src/client_connection.cpp \
            src/tcp_connection.cpp \
            src/event_struct.cpp \
+           src/tcp_timer.cpp \
 		   src/user.cpp \
 		   src/worker_node.cpp
 		   
@@ -17,6 +18,7 @@ HEADERS += src/master_node.hpp \
 		   src/client_connection.hpp \
            src/tcp_connection.hpp \
            src/event_struct.hpp \
+           src/tcp_timer.hpp \
            src/user.hpp \
 		   src/worker_node.hpp \
 		   src/thread_init_exception.hpp \
