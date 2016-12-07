@@ -461,15 +461,18 @@ QSet<calendar_event> worker_node::suggest_event_times(const QString & owner,
 	} QSet<calendar_event> times;
 
 	/* what day even is it? */
+	QTime _time = QDateTime::currentDateTime().time();
+	if (!_time.addSecs(60 * duration.toInt()).isValid()) throw std::invalid_argument("invalid duration");
 	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
-	
+	QString start_time = _time.toString("hh:mm");
 	QSqlQuery query(m_db);
 	QString query_text = QString("SELECT schedule_item.date, schedule_item.start_time, "
 								 "schedule_item.duration FROM schedule_item, schedules "
 								 "WHERE schedules.owner = '") + owner + "' "
 		+ "AND schedule_item.date >= '" + start_date + "' "
 		+ "AND schedule_item.date <= '" + deadline_date + "' "
-		+ "AND schedule_item.schedule_id = schedules.schedule_id;";
+		+ "AND schedule_item.schedule_id = schedules.schedule_id "
+		+ "AND schedule_item.start_time > '" + start_time + "';";
 	query.prepare(query_text);
 
 	/* I suppose we can just as for those days then? */
@@ -537,11 +540,11 @@ bool worker_node::is_valid_for_user(const QString & owner,
 	} else if (!owner.size()) {
 		throw std::invalid_argument("empty owner string");
 		return false;
-	}
+	} else if (QDateTime::currentDateTime().time().addSecs(60 * event.duration)
+			   > event.time) return false;
 
 	/* what day even is it? */
 	QString start_date = QDateTime::currentDateTime().toString("yyyy-M-d");
-	
 	QSqlQuery query(m_db);
 	/**
 	 * It might be wise to have an end date, but... I mean...
