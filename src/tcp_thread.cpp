@@ -16,6 +16,11 @@ tcp_thread::tcp_thread(
 	m_pTcpMessages = new QQueue<tcp_connection>();
 }
 
+tcp_thread::~tcp_thread()
+{
+	delete m_pTcpMessages;
+}
+
 bool tcp_thread::init()
 {
 	/* forward accepted connections to our accept connection */
@@ -50,6 +55,7 @@ void tcp_thread::disconnected()
 	QTcpSocket * quitter = qobject_cast<QTcpSocket *>(sender());
 	/* convert to tcp_connection */
 	QString _host = quitter->peerName();
+	delete m_p_timer;
 	if (m_master_mode) {
 		tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
 		Q_EMIT(dropped_connection(to_dequeue));
@@ -64,6 +70,16 @@ void tcp_thread::acceptConnection()
 	QTcpSocket * client = m_pServer->nextPendingConnection();
 
 	if (client) {
+		if (!m_master_mode) {
+			currentSocket = client; m_p_timer = new QTimer();
+			connect(m_p_timer, &QTimer::timeout, this, &tcp_thread::timeout_disconnect);
+			m_p_timer->start(10000); /* 10 second timeout */
+			// std::cerr<<"starting timer thread..."<<std::endl;
+			// connect(t, &tcp_timer::timeout, this, &tcp_thread::timeout_disconnect,
+			// 		Qt::DirectConnection);
+			// if (!t->init()) std::cerr<<"WARNING: failed to construct timeout thread!"<<std::endl;
+		} 
+		
 		connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
 		connect(client, &QAbstractSocket::disconnected, this, &tcp_thread::disconnected);
 		connect(client, &QIODevice::readyRead, this, &tcp_thread::readFromClient);
@@ -75,18 +91,26 @@ void tcp_thread::echoReceived(QString msg)
 	std::cout<<"I read \""<<msg.toStdString()<<"\" from the client!"<<std::endl;
 }
 
+void tcp_thread::timeout_disconnect()
+{
+	std::cout<<"Ok... Bye?"<<std::endl;
+	QString * msg = new QString("ERROR: TIMEOUT\r\n");
+	QString client_host = currentSocket->peerName();
+	disconnect_client(new tcp_connection(client_host, currentSocket), msg);
+}
+
 void tcp_thread::readFromClient()
 {
 	//! Points at the thing that called this member function,
 	//! as well as casts it it a QTcpSocket.
 	QTcpSocket * pClientSocket = qobject_cast<QTcpSocket *>(sender());
-   
 	QString text;/* to store the message */
 
+	pClientSocket->waitForBytesWritten(-1);
 	QByteArray bae = pClientSocket->readLine();
 	QString temp = QString(bae);
 	QString hostname = pClientSocket->peerName();
-	text += temp.replace("\r\n", "");
+	text += temp.replace("\r\n", ""); m_p_timer->stop();
 
 	/* this checks if we are a master or a worker */
 	if (m_master_mode) {

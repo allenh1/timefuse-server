@@ -21,7 +21,7 @@ class tcp_thread : public QObject
 	Q_OBJECT
 public:
 	explicit tcp_thread(const QString & _hostname, const quint16 & _port, const bool & _master_mode = true, QObject * parent = NULL);
-	~tcp_thread() { /** @todo This function is important, I suppose... **/ }
+	virtual ~tcp_thread();
 
 	bool init();
 	bool writeData(QByteArray data, tcp_connection * receiver);
@@ -70,6 +70,7 @@ public:
 	Q_SIGNAL void dropped_client();
 
 	Q_SLOT void echoReceived(QString);
+	Q_SLOT void timeout_disconnect();
 
 	int queueDepth() {
 		QMutex * pMutex = new QMutex();
@@ -112,7 +113,9 @@ private:
 	master_node * m_p_master_node;
 	worker_node * m_p_worker_node;
 
+	QTcpSocket * currentSocket = NULL;
 	QQueue<tcp_connection> * m_pTcpMessages;
 	QList<tcp_connection*> m_tcp_connections;
+	QTimer * m_p_timer;
 };
 #endif
