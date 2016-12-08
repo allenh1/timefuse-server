@@ -16,6 +16,12 @@ tcp_thread::tcp_thread(
 	m_pTcpMessages = new QQueue<tcp_connection>();
 }
 
+tcp_thread::~tcp_thread()
+{
+	delete m_pTcpMessages;
+	delete m_tcp_connections;
+}
+
 bool tcp_thread::init()
 {
 	/* forward accepted connections to our accept connection */
