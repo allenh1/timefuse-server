@@ -110,7 +110,7 @@ void tcp_thread::readFromClient()
 	QByteArray bae = pClientSocket->readLine();
 	QString temp = QString(bae);
 	QString hostname = pClientSocket->peerName();
-	text += temp.replace("\r\n", ""); m_p_timer->stop();
+	text += temp.replace("\r\n", "");
 
 	/* this checks if we are a master or a worker */
 	if (m_master_mode) {
@@ -144,6 +144,7 @@ void tcp_thread::readFromClient()
 			pClientSocket->disconnectFromHost();
 		}
 	} else {
+		 m_p_timer->stop();
 		/* check for CREATE_ACCOUNT command */
 		if (text.contains("CREATE_ACCOUNT")) {
 			std::cout<<"create account received"<<std::endl;
