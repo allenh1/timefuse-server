@@ -19,7 +19,6 @@ tcp_thread::tcp_thread(
 tcp_thread::~tcp_thread()
 {
 	delete m_pTcpMessages;
-	delete m_tcp_connections;
 }
 
 bool tcp_thread::init()
@@ -56,6 +55,7 @@ void tcp_thread::disconnected()
 	QTcpSocket * quitter = qobject_cast<QTcpSocket *>(sender());
 	/* convert to tcp_connection */
 	QString _host = quitter->peerName();
+	delete m_p_timer;
 	if (m_master_mode) {
 		tcp_connection * to_dequeue = new tcp_connection(_host, quitter);
 		Q_EMIT(dropped_connection(to_dequeue));
@@ -97,7 +97,6 @@ void tcp_thread::timeout_disconnect()
 	QString * msg = new QString("ERROR: TIMEOUT\r\n");
 	QString client_host = currentSocket->peerName();
 	disconnect_client(new tcp_connection(client_host, currentSocket), msg);
-	delete m_p_timer;
 }
 
 void tcp_thread::readFromClient()
@@ -111,7 +110,7 @@ void tcp_thread::readFromClient()
 	QByteArray bae = pClientSocket->readLine();
 	QString temp = QString(bae);
 	QString hostname = pClientSocket->peerName();
-	text += temp.replace("\r\n", "");
+	text += temp.replace("\r\n", ""); m_p_timer->stop();
 
 	/* this checks if we are a master or a worker */
 	if (m_master_mode) {
