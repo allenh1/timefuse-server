@@ -1,12 +1,13 @@
 DELIMITER $$
-DROP PROCEDURE IF EXISTS AddGroup;
+DROP PROCEDURE IF EXISTS ListGroups$$
 
-CREATE PROCEDURE AddGroup(
- IN groupName VARCHAR(100),
+CREATE PROCEDURE ListGroups(
+ IN user VARCHAR(500),
+ IN pass VARCHAR(500),
  OUT success BOOLEAN)
 BEGIN
  -- Count existing groups with that name.
- DECLARE X, id_no INT DEFAULT 0;
+ DECLARE X, uid INT DEFAULT 0;
  SELECT count(group_name) AS count INTO X FROM groups WHERE group_name = groupName;
  -- Check that X is zero to avoid recreation.
  IF X != 0 THEN
@@ -21,3 +22,4 @@ BEGIN
   SET success = 1;
  END IF;
 END$$
+DELIMITER ;
