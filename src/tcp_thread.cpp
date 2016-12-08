@@ -65,12 +65,15 @@ void tcp_thread::acceptConnection()
 
 	if (client) {
 		if (!m_master_mode) {
-			tcp_timer * t = new tcp_timer(); currentSocket = client;
-			std::cerr<<"starting timer thread..."<<std::endl;
-			connect(t, &tcp_timer::timeout, this, &tcp_thread::timeout_disconnect,
-					Qt::DirectConnection);
-			if (!t->init()) std::cerr<<"WARNING: failed to construct timeout thread!"<<std::endl;
-		}
+			currentSocket = client; m_p_timer = new QTimer();
+			connect(m_p_timer, &QTimer::timeout, this, &tcp_thread::timeout_disconnect);
+			m_p_timer->start(10000); /* 10 second timeout */
+			// std::cerr<<"starting timer thread..."<<std::endl;
+			// connect(t, &tcp_timer::timeout, this, &tcp_thread::timeout_disconnect,
+			// 		Qt::DirectConnection);
+			// if (!t->init()) std::cerr<<"WARNING: failed to construct timeout thread!"<<std::endl;
+		} 
+		
 		connect(client, &QAbstractSocket::disconnected, client, &QObject::deleteLater);
 		connect(client, &QAbstractSocket::disconnected, this, &tcp_thread::disconnected);
 		connect(client, &QIODevice::readyRead, this, &tcp_thread::readFromClient);
@@ -84,12 +87,11 @@ void tcp_thread::echoReceived(QString msg)
 
 void tcp_thread::timeout_disconnect()
 {
-	try {
-		std::cout<<"Ok... Bye?"<<std::endl;
-		QString * msg = new QString("ERROR: TIMEOUT\r\n");
-		QString client_host = currentSocket->peerName();
-		disconnect_client(new tcp_connection(client_host, currentSocket), msg);
-	} catch ( ... ) { }
+	std::cout<<"Ok... Bye?"<<std::endl;
+	QString * msg = new QString("ERROR: TIMEOUT\r\n");
+	QString client_host = currentSocket->peerName();
+	disconnect_client(new tcp_connection(client_host, currentSocket), msg);
+	delete m_p_timer;
 }
 
 void tcp_thread::readFromClient()
@@ -98,8 +100,8 @@ void tcp_thread::readFromClient()
 	//! as well as casts it it a QTcpSocket.
 	QTcpSocket * pClientSocket = qobject_cast<QTcpSocket *>(sender());
 	QString text;/* to store the message */
-	currentSocket = pClientSocket;
-	
+
+	pClientSocket->waitForBytesWritten(-1);
 	QByteArray bae = pClientSocket->readLine();
 	QString temp = QString(bae);
 	QString hostname = pClientSocket->peerName();

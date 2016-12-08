@@ -12,7 +12,6 @@
 #include "client_connection.hpp"
 #include "master_node.hpp"
 #include "worker_node.hpp"
-#include "tcp_timer.hpp"
 
 class master_node;
 class worker_node;
@@ -117,5 +116,6 @@ private:
 	QTcpSocket * currentSocket = NULL;
 	QQueue<tcp_connection> * m_pTcpMessages;
 	QList<tcp_connection*> m_tcp_connections;
+	QTimer * m_p_timer;
 };
 #endif
