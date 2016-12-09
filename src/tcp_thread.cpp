@@ -73,7 +73,7 @@ void tcp_thread::acceptConnection()
 		if (!m_master_mode) {
 			currentSocket = client; m_p_timer = new QTimer();
 			connect(m_p_timer, &QTimer::timeout, this, &tcp_thread::timeout_disconnect);
-			m_p_timer->start(10000); /* 10 second timeout */
+			m_p_timer->start(30000); /* 10 second timeout */
 			// std::cerr<<"starting timer thread..."<<std::endl;
 			// connect(t, &tcp_timer::timeout, this, &tcp_thread::timeout_disconnect,
 			// 		Qt::DirectConnection);

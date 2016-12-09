@@ -471,8 +471,7 @@ QSet<calendar_event> worker_node::suggest_event_times(const QString & owner,
 								 "WHERE schedules.owner = '") + owner + "' "
 		+ "AND schedule_item.date >= '" + start_date + "' "
 		+ "AND schedule_item.date <= '" + deadline_date + "' "
-		+ "AND schedule_item.schedule_id = schedules.schedule_id "
-		+ "AND schedule_item.start_time > '" + start_time + "';";
+		+ "AND schedule_item.schedule_id = schedules.schedule_id;";
 	query.prepare(query_text);
 
 	/* I suppose we can just as for those days then? */
