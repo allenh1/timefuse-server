@@ -7,9 +7,10 @@
 class workernode : public QObject
 {
   Q_OBJECT
-   /**
-	* @todo Add required funcitons
-	*/
+  /**
+       * @todo Add required funcitons
+       */
+
 public:
   worker_node(QObject * pParent = NULL);
 };
