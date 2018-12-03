@@ -20,8 +20,8 @@
 #include <iostream>
 
 /* File Includes */
-#include "src/master_node.hpp"
-#include "src/worker_node.hpp"
+#include <master_node.hpp>
+#include <worker_node.hpp>
 
 int main(int argc, char ** argv)
 {
