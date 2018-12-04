@@ -7,7 +7,7 @@ CREATE PROCEDURE ListGroups(
  OUT success BOOLEAN)
 BEGIN
  -- Count existing groups with that name.
- DECLARE X, uid INT DEFAULT 0;
+ DECLARE X, id_no INT DEFAULT 0;
  SELECT count(group_name) AS count INTO X FROM groups WHERE group_name = groupName;
  -- Check that X is zero to avoid recreation.
  IF X != 0 THEN
